@@ -1,0 +1,448 @@
+# AGENTS.md
+
+> **Status:** Current general guide.
+
+Repository-wide instructions for LayerFS. Also read [core/AGENTS.md](core/AGENTS.md)
+for implementation under `core/`. Current owner instructions and documented
+supersessions govern; a closed handoff or historical receipt is not a new assignment.
+
+## Product scope and current workstreams
+
+**Implement both cluster one and cluster two in `core/`.** The v0.1.6
+reference implementation that lived under root `crates/` was retired on
+2026-10-10 (R9c) and is absent at HEAD. It was never a dependency, source
+include or fallback for core, and must not return as a second product. Its last
+source is at local tag `reference-v0.1.6-final` (`d296981ac`, `crates` tree `498dd1917812`);
+see the [R9c record](core/docs/issues/307/R9C-COMPLETION-20261010.md).
+Historical evidence, receipts and verdicts are retained unchanged. The
+retirement is a legacy retirement in the source-size comparison, not a
+simplification.
+
+| Workstream | Current scope | Entry point |
+| --- | --- | --- |
+| Cluster one | Implemented content, storage, history, persistence, project Init and telemetry libraries | [Cluster-one handbook](docs/general/cluster_one_handbook.md), [CAS/CDC/delta handbook](docs/general/cas_cdc_deltaencoding_handbook.md) |
+| Cluster two | Workspace, FUSE, daemon, execution and Commit/runtime integration design and implementation | [Current design index](core/docs/issues/303/README.md) and its seven primary contracts |
+| Legacy reference | v0.1.6, retired from `main` by R9c; read at the recovery tag only | [R9c record](core/docs/issues/307/R9C-COMPLETION-20261010.md) |
+
+**The LayerFS UI is the dsh LayerFS plugin** (owner, 2026-10-19): the LayerFS tab in
+DeepSeek Harness. It lives in its own repository,
+[dsh-layerfs](https://github.com/Ephemeral-AI-Lab/dsh-layerfs) (moved out of `dsh/`
+on 2026-10-23, #428), which pins the LayerFS commit it builds on; this repository
+holds no dsh code.
+Do not build or revive standalone HTML or TUI pages. **The `dsh-layerfs-demo`
+bundle (the LayerFS mock model and its demo workspace) is disabled permanently**
+(owner, 2026-10-21): it loads nothing, is not released and no guide installs it.
+
+Cluster names are workstreams. C1/C2/C5 in older component documents mean
+content/storage/history. Check [core/Cargo.toml](core/Cargo.toml) for active
+members: a directory or old test does not establish a built replacement.
+Source and public contracts establish implemented behavior. Owner requirements
+and proposals establish target behavior; research establishes neither capability
+nor qualification. Preserve source pins, limits, failures and open prerequisites.
+
+## Active persistence profile — owner direction 2026-10-07
+
+**Disposable / WAL / synchronous=OFF is the only permitted global Store
+profile. Durable execution is disabled indefinitely, until the owner explicitly
+allows it again.** This supersedes earlier instructions to exercise both profiles
+or to resume Durable after Disposable development. A milestone, old benchmark
+selection, default argument or passing build does not reauthorize Durable.
+
+Select Disposable explicitly for every new Store, application run, test,
+diagnostic and measurement. Do not execute Durable or fall back to it. Retained
+Durable implementation may compile, but report its execution as
+`NOT_RUN — disabled by owner until explicit reauthorization`. Preserve historical
+Durable receipts and their original verdicts. This execution policy does not
+claim that the Durable API has been removed. Each Workspace's daemon overlay
+remains a separate MEMORY/OFF/EXCLUSIVE database file.
+
+## LayerFS mental model
+
+- A Workspace is a complete mutable filesystem view over an immutable committed
+  root. Include `.git` and its index, ignored files, dependencies, symlinks,
+  caches and output; Git ignore rules do not filter LayerFS state.
+- Support both per-tool-call and per-task orchestration. Per-tool-call is the
+  expected common case and needs fast bootstrap. A Workspace can serve multiple
+  sequential/concurrent calls, last a long time and Commit incrementally.
+- Workspace granularity, Exec duration and Commit cadence are independent.
+  Commands may be short or long-lived in either mode. Ordinary Bash has no
+  automatic runtime timeout, command-specific restore/install, implicit Commit
+  or automatic unmount. Only explicit terminal unmount closes local ownership.
+- Filesystem access does not require `workspace_api.exec` or an Exec registration.
+  Any process with mount visibility and permission, including Bash launched by an
+  external executor, uses the same Workspace semantics through ordinary filesystem
+  calls. Sandbox or the external executor owns command launch, streams, exit
+  status and explicit cancellation. The filesystem daemon supervises no commands;
+  optional `WorkspaceApi.exec` only delegates ordinary Sandbox execution.
+  Keep this boundary explicit in implementation
+  and proofs; see [execution ownership](core/AGENTS.md#filesystem-access-and-execution-ownership).
+- Initial full-root acquisition is explicit. Repeated mount binds the complete
+  root without a whole-tree scan/copy/materialization or dependency restoration.
+  The only file it creates is the Workspace's own overlay database, copied from
+  the template. Demand-loaded metadata/content still pay real I/O.
+- Each mounted Workspace has its own local overlay SQLite file, copied at mount
+  from a template built before readiness and deleted at terminal unmount. Its
+  metadata, payload and operation records live only in that file; its open-file,
+  directory-position and kernel-reference state lives in daemon memory.
+  Workspaces share no overlay connection, writer, page cache or memory budget;
+  the daemon shares only committed immutable content and the global Store. One
+  lock guards a Workspace's connection: hold it for one short atomic job, never
+  across Store I/O, a whole Exec or a whole Commit.
+- Commit captures the shared locally published Workspace frontier, potentially
+  including several calls' changes regardless of how their processes were
+  launched. Do not filter captured changes by Exec registration or completion.
+  Retain stable existing input without a bulk overlay copy. Construct/save/publish
+  it; known install advances the base while preserving later active mutations and
+  the effective live view.
+- Namespace Init and captured Workspace construction reuse the same Content,
+  Storage and Persistence libraries. Project adapts native files and metadata;
+  Workspace adapts the captured immutable base plus Overlay changes. Keep
+  canonical construction in Content, object encoding/packing in Storage and
+  database writes in Persistence. Reuse these ports when completing daemon
+  construction; do not add a second encoder or route it through host Init. See
+  [shared construction boundaries](core/AGENTS.md#shared-construction-and-completion-boundaries)
+  for implemented entrypoints and the remaining S10 namespace integration.
+- `Save::finish()` completes saved objects while the Store remains open;
+  History publication follows. `Handles::seal()` consumes the sole Store
+  session for host/offline handoff, checkpoints and closes it. Its macOS unused
+  extent cleanup belongs to that lifecycle. A live daemon keeps the shared
+  Store open across Saves and Commits; it does not seal it per file or Commit.
+- A lost reply does not remove an already published mutation. Bash exit is not
+  proof that descendants, descriptors, dirty mappings or requests are finished.
+  UpToDate need not create a new Commit; invocation auditing is separate.
+- FUSE must preserve permissions, stable identity, coherent caches and exact
+  request/open/lookup ownership. Qualify both frequent fresh mounts and sustained
+  same-mount calls/Commits. Kernel writeback remains off under the target contract.
+- Large files, huge namespaces and mutation bursts require indexed/backed state,
+  bounded windows, streaming and backpressure. Resident containers/transport
+  frames must not impose artificial total file/edit/Workspace/Commit/flow/time
+  caps. Physical capacity, platform/format limits and explicit admission remain.
+  The one resident exception is a Workspace's open state, which grows with open
+  files and with the files the kernel currently references.
+- Automatic bounded local reclamation follows last-owner release, including
+  during live activity and idle periods. Terminal unmount drains requests,
+  closes the Workspace's overlay connection and deletes its file. Neither
+  deletes global history.
+- Target (owner direction 2026-10-07, Store calls revised 2026-10-18): every
+  daemon opens the global Store directly from a volume the daemons share and
+  reads, saves and publishes in-process. Project Init creates and seals one
+  Store file, installed into that volume. **SDK Store calls (fs, branch,
+  project, operator) run in the SDK's own process, which opens the same Store
+  directly; this is the only route.** It is Linux only: every opener shares
+  one Linux kernel and a local filesystem holding the Store (ext4, xfs,
+  btrfs). Anywhere else Store calls fail `Unsupported`, with no fallback; the
+  daemon does not serve Store calls. Workspace calls (mount, Exec, Commit,
+  status, unmount) go to the daemon. Do not revive `layerfs-server` or build a
+  host/server adapter in the data path; the host-mediated SDK runtime is
+  retired, not extended. See the
+  [integration contract](core/docs/issues/303/06-cluster-one-integration.md)
+  and [direct Store access](core/docs/issues/352/DIRECT_STORE.md).
+  **Exception (owner, 2026-10-20, revised the same day): dsh Live on macOS
+  only.** The dsh-layerfs plugin may give macOS processes a ported SDK with
+  the SDK's API whose calls run in one long-lived worker per LayerFS box: a
+  Linux container running the real SDK, which opens each project's Store
+  directly and keeps it and its daemon connections open while the project is
+  in use (closed after a quiet minute). The worker listens on loopback only,
+  behind a secret. The product SDK and daemon do not change. (Widened to any
+  integration on 2026-10-24; see below.)
+- **Additional exception (owner, 2026-10-22): dsh Live on Windows.** The
+  Windows dsh-layerfs adapter may forward its SDK binding calls to one
+  authenticated loopback worker per LayerFS home in a selected WSL2 Linux
+  distribution. The worker opens the shared Store directly on that
+  distribution's local ext4/xfs/btrfs filesystem and uses its Docker Engine
+  for Sandbox daemons. Windows owns the UI, bindings and traces; Linux owns
+  native handles and project discovery. This is independent of the macOS
+  adapter and changes neither the product SDK nor the daemon. A lost reply
+  is never replayed, and an uncertain Init retains its Linux home and volume.
+- **Plugin-neutral LayerFS (owner, 2026-10-24).** LayerFS is agnostic to dsh
+  and every other plugin. The macOS and Windows worker routes above are open
+  to any integration: `@layerfs/runtime` starts the worker on those platforms
+  and any process given its endpoint (`useWorker(endpoint)` or
+  `LAYERFS_WORKER_ENDPOINT`) sends its Store calls there. There is no adapter
+  name, no integration check and no code that names a plugin. LayerFS reads
+  `LAYERFS_*` settings only. An integration that can set only its own
+  prefixed names, such as dsh's `DSH_*`, maps them itself. Linux still makes
+  Store calls in the caller's process, and the worker's rules above (loopback,
+  secret, one attempt, no replay) are unchanged.
+- **One global database, one writer, short holds (owner decision 2026-10-18).**
+  All committed state lives in one SQLite Store file; no sharding, second
+  database, concurrent-writer engine or objects outside it. Writes go one at a
+  time: SQLite's single-writer rule, the Linux directory lock across writer
+  processes, the in-process admission queue and the publication lane (head
+  check, merge, publish as one step). These locks stay; they replace `Busy`
+  failures under the no-retry rule. Performance comes from short holds: heavy
+  work happens before the lane, only the atomic publish step holds it, reads
+  never take it. Agents' tool calls are separated by model latency, so
+  concurrent Commits are expected to be uncommon; optimize the uncontended
+  Commit and keep contention correct and bounded. Work that grows with tree
+  size, history or Branch count inside the lane is a defect. See the
+  [Store concurrency model](core/docs/architecture/83-store-concurrency-model.md)
+  and the [global SQLite Store](core/docs/architecture/84-global-sqlite-store.md)
+  design reference.
+  Immutable objects support reuse/distribution; authority, reference closure,
+  mutable history, durability and safe GC still require exact contracts.
+  Filesystem history is not a process, memory, socket or stdout/stderr
+  checkpoint.
+
+## Read the current contract for the task
+
+Before cluster-two implementation/integration, read both root handbooks and the
+[current design index](core/docs/issues/303/README.md), then the relevant primary
+operation, [engine](core/docs/issues/303/daemon-sqlite.md),
+[FUSE](core/docs/issues/303/fuse.md) and
+[runtime integration](core/docs/issues/303/06-cluster-one-integration.md) contracts.
+The [optimization investigation](core/docs/issues/303/fuse-optimization-investigation.md)
+is research; it does not silently select new algorithms, profiles or capabilities.
+
+Completed/superseded Stage 0–6 prompts are historical references, not default
+routing. Preserve canonical compatibility and evidence, but do not resume old
+loops, reopen closed rows or run old campaigns unless the current task selects
+that work. Do not choose authority by issue number alone.
+
+For documentation/release work, read the
+[documentation policy](docs/general/documentation-policy.md) and
+[release policy](docs/general/release-policy.md).
+For measurements, read the [agent measurement workflow](docs/general/agent-measurement-policy.md),
+[benchmark rules](docs/general/benchmark_rules.md),
+[report template](docs/general/benchmark_agent_report.md) and owning harness/family contract.
+Benchmark suites, harnesses and released data live in the
+[layerfs-benchmark](https://github.com/Ephemeral-AI-Lab/layerfs-benchmark) repository, moved out of
+`benchmark/` on 2026-10-23. Core routing is its
+[fs-bench-pro/AGENTS.md](https://github.com/Ephemeral-AI-Lab/layerfs-benchmark/blob/main/fs-bench-pro/AGENTS.md).
+**fs-bench-pro is frozen and left broken (owner, 2026-10-18).** Do not edit,
+build, run or repair it, and leave it out of workspace builds and checks. Its
+call sites broken by #352 F-020 (`ProjectApi` fork and commits,
+`ForkRequest`, a `SandboxCreate` without `connect_host`; listed in the F-020
+fix record) stay broken; a product change never adapts it. Only an
+explicit owner instruction reopens it.
+The root `benchmark/` harness that built and measured the retired reference was
+removed from HEAD; read it at tag `reference-v0.1.6-final`. Released
+fs-bench-pro results (v0.1.4–v0.1.6) are in layerfs-benchmark's
+[data/fs-bench-pro](https://github.com/Ephemeral-AI-Lab/layerfs-benchmark/blob/main/data/fs-bench-pro/README.md).
+Older documents here still link to `benchmark/` paths; read those files in
+layerfs-benchmark at the same path without the `benchmark/` prefix.
+
+## 1. A warm cache must never credit a measured phase
+
+Each measured phase pays for its own work from an equally declared/enforced
+cache state. No setup/earlier-phase warmth, pre-touching, own-write cache credit,
+lifetime-peak substitution or file-sized backing/page-cache growth disguised by a
+bounded heap. Unknown or mismatched cache state is INCOMPLETE/INELIGIBLE, not PASS.
+Preserve failures and historical verdicts. Full rules and the retained example:
+[measurement workflow §1](docs/general/agent-measurement-policy.md#1-a-warm-cache-must-never-credit-a-measured-phase).
+
+## 2. Reuse setup (`--setup clone`); never reuse measurement
+
+Reuse closed prepared inputs, sealed builds/images and qualifying proof receipts
+through the declared mechanisms. Use `--setup clone` for post-initialization
+cases where supported; fresh is for initialization/fresh-output cases.
+A clone is an independent writable byte copy, not a cold claim. Never reuse a
+mutated sample or remove timed product work through setup. Record all reuse and
+enforce residency for a cold claim. See
+[measurement workflow §2](docs/general/agent-measurement-policy.md#2-reuse-setup---setup-clone-never-reuse-measurement).
+
+## 3. Running a measurement
+
+The [measurement workflow](docs/general/agent-measurement-policy.md#3-running-a-measurement)
+owns detailed procedures, scoped SDK rules and budget exceptions. Its requirements
+remain binding; moving them out of this file does not weaken them.
+
+1. One sample per case/arm, no best-of or repeated unchanged treatment.
+   Diagnose retained receipts or labeled count-driven causes. The separately
+   scoped regression-screen exception is not treatment resampling.
+2. Fresh append-only outputs; retain failed, ineligible and unrun selections.
+3. Pin source/product/compilation/dependency/binary/image/harness/workload/cache
+   identities. No dirty seal compared as a sealed arm.
+4. Exploratory timing is diagnostic; verification is separate. At final identity,
+   run covering proof once. Reuse unaffected earlier-family evidence; rerun only
+   the necessary affected checkpoint, without relabeling old receipts.
+5. Use worktree-local measurement locks and Cargo targets; no same-worktree
+   overlap. Declare cross-worktree interference; never interrupt another owner.
+6. Read the report template before each invocation; record exact metrics, limits,
+   arithmetic, commands and all outcomes in the campaign-owned ledger/receipts.
+7. Default complete performance command ≤15 s; declared exceptions up to 25 s;
+   default independent proof <10 s. Frozen family/profile limits retain their
+   declared scope. No timeout/workload/cache changes to turn a miss into PASS.
+8. Commit/capture/snapshot have one construction producer in normal wiring and
+   each measured operation; export `LAYERFS_CONSTRUCTION_WORKERS=1`.
+   Namespace Init alone retains its supported parallel construction profile.
+   No extra helper/lane to pass a gate; FUSE dispatch is a separate concern.
+9. Measure both speed and storage. Reject about 50% speed loss for about 5%
+   storage benefit; report raw deltas and preserve frozen-gate failures.
+
+## 4. Code, build and docs
+
+- For parallel worktree build caches, E2E resource retention, disk headroom and
+  cleanup, follow [the cleanup policy](docs/general/cleanup.md#9-parallel-worktree-build-and-e2e-retention).
+  Keep each active worktree's target private and warm; release completed caches
+  and disposable test resources without turning cleanup into a global build gate.
+- Use [the parallel worktree launcher](docs/general/parallel-worktrees.md) for
+  registered private Cargo homes/targets and pinned SDK E2E bundles. Build and
+  test within the selected worktree's resources; independent E2E runs own their
+  writable Stores, SDK homes, containers, and traces. Preserve a test's intentional
+  multi-daemon shared Store. Export exact cache releases to the cleanup script at
+  handoff; no cross-worktree build lock or lead-issued go window is introduced.
+- Check host free space at assignment start, at least every 30 minutes during
+  sustained work, before large builds, target copies or fixture creation, after
+  build/E2E batches, and at handoff. Run
+  `python3 tools/cleanup.py check` (GB here means 1,000,000,000 bytes). When free
+  space is **below 100 GB**, run the cleanup script's plan/apply procedure with
+  `--reclaim-gb 300` and reclaim **at least 300 GB of net host free space** across
+  that cleanup episode. Existing cleanup authorization applies; do not ask again
+  for routine removal of confirmed disposable resources. Use exact owner-released
+  selections and protect active work, warm targets, pinned binaries, and evidence.
+  Verify actual free-byte recovery; do not substitute candidate allocation totals.
+  If confirmed disposable data cannot meet 300 GB, report the shortfall and the
+  remaining protected/uncertain allocation without deleting it or claiming success.
+- Preserve unrelated work. Build the current core implementation, not legacy
+  aliases, source includes or error-driven substitutes. Keep platform cfgs.
+- No new dependency if an existing crate supplies the capability. Never patch,
+  fork, vendor, replace or edit third-party code/registry packages, except the
+  owner's explicitly authorized fuser 0.18.0 timestamp, scoped receive-loop
+  lifecycle and negotiated receive-buffer patches described in
+  [core provenance checks](core/AGENTS.md#fuser-provenance-and-authorized-patch-checks).
+  Use locked builds and report an incompatible required dependency with evidence.
+- One attempted operation; no automatic retry/busy handler, refresh/reprepare
+  or failed-operation replay. Readiness waits are not retries. Preserve exact
+  failure/uncertainty and custody; no guessed resend, deletion or success.
+- **CI reports; it never gates (owner, 2026-10-23).** GitHub Actions runs a
+  fast lane after each push or pull request (`.github/workflows/ci.yml`: fmt,
+  guards, Clippy and the fast tests) and a nightly lane (`nightly.yml`: slow and
+  FUSE mount tests). [core/tools/ci_tests.py](core/tools/ci_tests.py) decides
+  which tests go in which lane. Neither is a required check, and nothing runs
+  before a push. Do not wait for CI, and do not treat a green run as
+  verification of your change: verify the changed scope yourself with
+  [core checks](core/AGENTS.md#checks-and-completion) and report checks/gaps.
+  There is still no pre-push gate: `tools/preflight.sh` stays retired; do not
+  restore it or an equivalent wrapper. An empty guard scan proves no
+  implementation.
+- **Migrations and refactors delete tests rather than nurse them (owner,
+  2026-10-18).** When code is moved, replaced or refactored, a test that is
+  tricky to adapt (it drives a removed route, internal type or retired model,
+  or needs scaffolding the new design does not have) is deleted, not patched.
+  Keep or move a test only when it still checks surviving behaviour cheaply;
+  where a deleted test guarded a fix or contract that still holds, cover that
+  behaviour with a test on the new code. List deleted tests in the commit
+  message and the fix record. Never weaken a surviving test's assertion to
+  make it pass.
+- **No test command runs longer than 2 minutes.** Give every test invocation an
+  explicit wall timeout of at most 120 s and stop it when it expires; never
+  leave one running, background it to wait it out, or wrap it in a repeat loop.
+  Build first (`--no-run`) so compilation is not mistaken for a slow test, and
+  select by package/test when the whole suite cannot fit. A test that reaches
+  the ceiling has FAILED as a hang: diagnose it from source and bounded output
+  before any rerun, and report it. Write tests so they cannot wait forever:
+  bounded waits, and a spawned thread's exit must not depend on another thread
+  finishing without panicking. This is a ceiling, not a target; the scoped
+  measurement and proof budgets in §3 stay stricter.
+- QUIET means the replay owns timing-sensitive Docker work: other sessions
+  may run Docker with -j 2 (one heavy batch at a time) and must not wait for
+  it to clear.
+- Preserve [repository ARM64 build inputs](.cargo/config.toml); explicit
+  RUSTFLAGS must repeat the profile. Details are in the core guide.
+- Persistence profiles are scoped to the store. Claim only their guarantees;
+  no `fsync`/`fdatasync`/`sync_data`/`sync_all` on disposable Workspace backing,
+  and no space is reserved ahead of use on it.
+  Memory hints are hints, not evidence of resident bounds.
+- New core/application production files obey the 999-line ceiling and 200-line
+  declaration/delegation ceiling for `lib.rs`/`mod.rs`. Product-only source,
+  external tests and guard coverage are detailed in the core guide.
+- Update affected source architecture/API documentation with implementation
+  changes. Keep proposal, research, implemented and measured claims distinct.
+
+### Production LOC comparison for every commit
+
+Every Git commit must record **production source lines of code before, after,
+and the signed delta**. Test, documentation and tooling changes do not contribute
+to this number. This is a source-size comparison, not a performance claim.
+
+- **Count production code only.** Count nonblank, non-comment source lines in
+  first-party LayerFS product implementation, including required runtime SQL or
+  other shipped implementation outside Rust src/ directories. Imports, declarations
+  and forwarding code count. Exclude tests (including legacy inline test modules
+  and test-only branches), fixtures, mocks, examples, benchmark harnesses, development
+  tools, docs, manifests/lockfiles, third-party code and generated build artifacts.
+  A line with both code and a comment counts once. Do not substitute raw file-line
+  totals or Git insertion/deletion statistics for production LOC.
+- **Compare the exact commit snapshots.** Before is the commit's first parent;
+  after is the committed tree. Prepare the comparison from the parent and final
+  staged tree before committing, then confirm the resulting commit matches it.
+  Exclude unstaged/untracked work. Use an empty tree for an initial commit. For
+  merges declare the first-parent comparison; recompute after amendments/rebases
+  or any change to the staged source.
+- **Keep counting reproducible.** Use the same counter/version, source scope,
+  exclusions and handling of inline test code for both snapshots. Record the
+  command/method with the comparison. Review source classification when files
+  move or new product paths appear; do not silently drop code from the count.
+  A counter that includes legacy inline tests does not satisfy this rule.
+- **Report migration honestly.** While old and replacement implementations
+  coexist, report their production totals separately as well as the combined
+  total. Include application-adapter production code when introduced. Label
+  relocation, duplication and legacy retirement; do not call a scope change or
+  deletion of the reference an algorithmic simplification. Since R9c the
+  reference scope is absent: report it as `reference absent (retired R9c; last
+  counted 65,417 at tree 498dd1917812)`, never as a bare 0.
+- **Put the result in the commit message and handoff.** Use
+  `Production LOC: <before> -> <after> (delta <signed difference>)`, with scope
+  and counting method, plus migration subtotals when applicable. For multiple
+  commits, give a comparison for each. A test/docs-only commit still reports
+  the unchanged production total and delta 0; it does not report a fictitious
+  zero-sized product or add test/documentation LOC to the headline.
+
+LOC growth is allowed when justified by the product change; this rule does not
+require every commit to shrink. Never remove required validation, compress code
+into dense lines, or move implementation outside the declared scope to improve
+the number. Complete the comparison before committing; do not invent estimates.
+
+### File and folder layout listings
+
+When a plan, handoff, review or reply shows a source layout, current or
+planned, use one vertical listing per crate in a fenced `diff` block, so the
+renderer highlights what changes:
+
+```diff
+  construction/                       [793]
+    mod.rs                               4
+    records.rs                         247
++   driver.rs                            —   new
+    captured/                         [502]  (existing constructor, reused)
+      owner.rs                         256
+      scan.rs                          246
+-   legacy.rs                           40   (removed: driver.rs replaces it)
++   scratch/                             —   cond.
++     records.rs                         —
+```
+
+- **Column 1 is the change marker, then one space, then the path.** `+` marks
+  a file or directory that does not exist yet (green); `-` marks one this
+  change removes (red); a space marks one that stays, whether unchanged,
+  edited in place or moved in (say where from in its annotation). A listing of
+  the current tree alone has a space on every line.
+- **One path per line.** Indent two spaces per directory level. Directories end
+  in `/`; list a directory's own files before its subdirectories. Do not join
+  siblings on one line or use brace groups such as `{mod,cursor}.rs`.
+- **Every existing file carries its production LOC**, right-aligned in one
+  column, from the pinned `tools/production_loc.py --files` at a stated commit.
+  This is the `prod` column, never physical lines or Git statistics.
+- **Every directory carries its subtotal in brackets**, summing all listed
+  production files beneath it as they are at the stated commit, removed files
+  included. If only part of a directory is shown, say so in its annotation;
+  the bracketed number then covers only the files shown.
+- **A file that does not exist yet shows `—`**, followed by `new` (planned) or
+  `cond.` (added only if existing code cannot cover the need). Never print an
+  estimated LOC for it.
+- **Annotations are short, in parentheses, after the number**: what changes in
+  this step, or why the file is listed. Keep ownership rationale in prose.
+- **State the scope above the listing**: the commit, the counter, and which
+  crates or directories are included. Tests live outside `src/` and are not
+  counted; name their directory in prose if it matters.
+
+A listing is a snapshot. It does not make a planned name a scaffolding
+requirement, and an existing source file or `core/Cargo.toml` still decides
+what is built.
+
+## 5. Why these rules exist (worked example)
+
+The historical cache-credit failure and its immutable ledger remain linked in
+[the measurement workflow](docs/general/agent-measurement-policy.md#5-why-these-rules-exist-worked-example).
+Historical explanation is retained outside default implementation routing.
