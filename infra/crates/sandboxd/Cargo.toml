@@ -1,0 +1,27 @@
+[package]
+name = "infra-sandboxd"
+description = "Workspace-owned overlay service with typed kernel mount and Store calls."
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+infra-overlay = { path = "../overlay" }
+infra-version = { path = "../version" }
+infra-workspace = { path = "../workspace" }
+infra-fuse = { path = "../fuse" }
+infra-bridge = { path = "../bridge" }
+infra-content = { path = "../content" }
+infra-store = { path = "../store" }
+infra-history = { path = "../history" }
+infra-telemetry = { path = "../telemetry" }
+# Concrete Store opening stays in application bootstrap, outside store/.
+infra-store-sqlite = { path = "../store-sqlite" }
+
+nix = { version = "=0.31.3", features = ["fs", "user", "process"] }
+
+[dev-dependencies]
+blake3 = { version = "=1.8.5", default-features = false }
+infra-testkit-sdk = { path = "../testkit-sdk" }
+infra-repo-init = { path = "../repo-init" }

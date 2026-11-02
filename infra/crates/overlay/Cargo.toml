@@ -1,0 +1,15 @@
+[package]
+name = "infra-overlay"
+description = "Daemon-owned disposable SQLite overlay, indexed state and bounded jobs."
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+blake3 = { version = "=1.8.5", default-features = false }
+nix = { version = "=0.31.3", default-features = false, features = ["fs"] }
+rusqlite = { version = "=0.40.2", features = ["cache", "limits", "blob"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rusqlite = { version = "=0.40.2", features = ["bundled"] }

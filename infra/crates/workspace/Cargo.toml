@@ -1,0 +1,15 @@
+[package]
+name = "infra-workspace"
+description = "Workspace filesystem semantics over public content APIs and daemon overlay jobs."
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+infra-content = { path = "../content" }
+infra-overlay = { path = "../overlay" }
+infra-telemetry = { path = "../telemetry" }
+
+[dev-dependencies]
+infra-sandboxd = { path = "../sandboxd" }

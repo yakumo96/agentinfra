@@ -1,0 +1,10 @@
+[package]
+name = "infra-testkit-docker"
+description = "Ordinary local Engine commands, streams and exact runtime status"
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+nix = { version = "=0.31.3", features = ["poll", "socket", "fs"] }

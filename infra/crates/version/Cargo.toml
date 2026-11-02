@@ -1,0 +1,19 @@
+[package]
+name = "infra-version"
+description = "The Store engine: typed reads, file changes and Branch history over the global Store, the operator Store calls, and the Store and overlay ports Workspace Commits use. No SDK method names, FUSE, socket or Sandbox."
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+infra-overlay = { path = "../overlay" }
+infra-workspace = { path = "../workspace" }
+infra-bridge = { path = "../bridge" }
+infra-content = { path = "../content" }
+infra-store = { path = "../store" }
+infra-history = { path = "../history" }
+infra-telemetry = { path = "../telemetry" }
+# Concrete Store opening (bootstrap) and the kernel guard's open.
+infra-store-sqlite = { path = "../store-sqlite" }
+nix = { version = "=0.31.3", default-features = false, features = ["fs"] }

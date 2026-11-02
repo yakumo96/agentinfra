@@ -1,0 +1,17 @@
+[package]
+name = "infra-fuse"
+description = "Native Workspace connection and bounded request service"
+version.workspace = true
+edition = "2021"
+rust-version = "1.85"
+license.workspace = true
+
+[dependencies]
+infra-overlay = { path = "../overlay" }
+infra-workspace = { path = "../workspace" }
+infra-content = { path = "../content" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+fuser = { version = "=0.18.0", default-features = false }
+libc = "=0.2.189"
+nix = { version = "=0.31.3", features = ["fs", "mount", "feature"] }
