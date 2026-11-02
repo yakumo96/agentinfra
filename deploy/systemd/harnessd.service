@@ -1,0 +1,11 @@
+[Unit]
+Description=agentinfra harnessd (agent sessions)
+After=infrad.service gatewayd.service
+
+[Service]
+User=harness
+ExecStart=/usr/bin/node /opt/agentinfra/harness/server/src/main.ts --listen 127.0.0.1:7171
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

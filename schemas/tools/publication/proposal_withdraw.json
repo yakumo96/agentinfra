@@ -1,0 +1,39 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "proposal_withdraw",
+  "group": "publication",
+  "description": "撤回尚未发布的 Proposal。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "proposal_id": {
+        "$ref": "../../common/defs.json#/$defs/ProposalId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "proposal_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "withdrawn": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "withdrawn"
+    ]
+  }
+}

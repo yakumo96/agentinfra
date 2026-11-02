@@ -1,0 +1,68 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "artifact_read",
+  "group": "artifact",
+  "description": "分页读取存在内容存储里的产物，例如完整的命令输出。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "$ref": "../../common/defs.json#/$defs/ArtifactId"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "limit": {
+        "$ref": "../../common/defs.json#/$defs/Limit"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "artifact_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "chunk": {
+        "type": "string"
+      },
+      "encoding": {
+        "$ref": "../../common/defs.json#/$defs/Encoding"
+      },
+      "size": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "next_offset": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "eof": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "chunk",
+      "encoding",
+      "size",
+      "next_offset",
+      "eof"
+    ]
+  }
+}

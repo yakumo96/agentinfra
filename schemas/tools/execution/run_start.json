@@ -1,0 +1,60 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "run_start",
+  "group": "execution",
+  "description": "后台执行；立即返回 run_id，进程跨后续 commit 继续运行。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "command": {
+        "type": "string",
+        "minLength": 1
+      },
+      "cwd": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "secrets": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        "description": "按名字注入的秘密环境变量"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id",
+      "command"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "run_id": {
+        "$ref": "../../common/defs.json#/$defs/RunId"
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/RunState"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "run_id",
+      "state"
+    ]
+  },
+  "long_running": true
+}

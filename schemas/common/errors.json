@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentinfra:common/errors",
+  "title": "Infra 错误码",
+  "description": "MCP 工具错误的唯一清单。合并冲突、验证失败、等待审批不是错误，而是 Proposal 状态。",
+  "codes": [
+    {
+      "code": "AUTHORIZATION_DENIED",
+      "retryable": false,
+      "when": "令牌无权调用该工具或访问该资源",
+      "caller_action": "报告，不重试"
+    },
+    {
+      "code": "INVALID_ARGUMENT",
+      "retryable": false,
+      "when": "参数不符合 schema 或语义约束",
+      "caller_action": "修正参数"
+    },
+    {
+      "code": "NOT_FOUND",
+      "retryable": false,
+      "when": "引用的工作区、revision、run、工作项、Proposal 或产物不存在",
+      "caller_action": "检查 ID"
+    },
+    {
+      "code": "REVISION_MISMATCH",
+      "retryable": false,
+      "when": "expected_sha256、expected_generation 或预期分支头不符",
+      "caller_action": "重新读取后判断"
+    },
+    {
+      "code": "TEXT_NOT_FOUND",
+      "retryable": false,
+      "when": "replace_text 的旧文本没有出现",
+      "caller_action": "重新读取，扩大上下文"
+    },
+    {
+      "code": "TEXT_NOT_UNIQUE",
+      "retryable": false,
+      "when": "replace_text 的旧文本出现次数与 expected_count 不符",
+      "caller_action": "重新读取，扩大上下文"
+    },
+    {
+      "code": "PATH_ESCAPE",
+      "retryable": false,
+      "when": "路径穿越、绝对路径或符号链接指向工作区外",
+      "caller_action": "改用工作区内的规范化相对路径"
+    },
+    {
+      "code": "UNSUPPORTED_OPERATION",
+      "retryable": false,
+      "when": "文件系统能力清单里标为不支持的操作",
+      "caller_action": "换一种做法，见能力清单"
+    },
+    {
+      "code": "WORKSPACE_BUSY",
+      "retryable": true,
+      "when": "其他 actor 持有写入权，或工作区正在封存",
+      "caller_action": "等待，或 fork"
+    },
+    {
+      "code": "LEASE_EXPIRED",
+      "retryable": false,
+      "when": "自己的租约已过期",
+      "caller_action": "重新认领"
+    },
+    {
+      "code": "FENCED_OUT",
+      "retryable": false,
+      "when": "写入权已被 restore 或回收器换发",
+      "caller_action": "停止当前流程，查询状态"
+    },
+    {
+      "code": "CHECKPOINT_NOT_READY",
+      "retryable": true,
+      "when": "封存中途失败，状态已回滚",
+      "caller_action": "稍后重试"
+    },
+    {
+      "code": "CONFLICT_MARKERS_PRESENT",
+      "retryable": false,
+      "when": "提交时仍有未解决的冲突标记",
+      "caller_action": "解决冲突后再提交"
+    },
+    {
+      "code": "NO_WORK_AVAILABLE",
+      "retryable": true,
+      "when": "没有可认领的工作项",
+      "caller_action": "等事件，或结束"
+    },
+    {
+      "code": "QUOTA_EXCEEDED",
+      "retryable": true,
+      "when": "工作区数、执行槽位或磁盘配额用尽",
+      "caller_action": "释放资源或等待"
+    },
+    {
+      "code": "IDEMPOTENCY_CONFLICT",
+      "retryable": false,
+      "when": "同一幂等键对应不同请求",
+      "caller_action": "修正调用，属于 harness 缺陷"
+    },
+    {
+      "code": "OPERATION_IN_PROGRESS",
+      "retryable": true,
+      "when": "同一幂等键的上一次调用还在执行",
+      "caller_action": "稍后用同一幂等键重试；details.operation_id 是进行中的操作"
+    },
+    {
+      "code": "DURABILITY_NOT_MET",
+      "retryable": true,
+      "when": "fsync 或事务失败",
+      "caller_action": "用同一幂等键重试"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_status",
+  "group": "workspace",
+  "description": "工作区当前状态：基础 revision、generation、写入者、未解决冲突。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "make_current": {
+        "type": "boolean",
+        "default": false,
+        "description": "设为该会话的当前工作区"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "branch_id": {
+        "$ref": "../../common/defs.json#/$defs/BranchId"
+      },
+      "base_revision": {
+        "$ref": "../../common/defs.json#/$defs/RevisionId"
+      },
+      "head_commit": {
+        "$ref": "../../common/defs.json#/$defs/CommitId"
+      },
+      "generation": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "stable_checkpoint": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/CheckpointId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "writer": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "none",
+              "agent",
+              "system"
+            ]
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "$ref": "../../common/defs.json#/$defs/ActorId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "actor_id"
+        ]
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceState"
+      },
+      "consistency": {
+        "$ref": "../../common/defs.json#/$defs/Consistency"
+      },
+      "dirty_after_crash": {
+        "type": "boolean"
+      },
+      "unresolved_conflicts": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "branch_id",
+      "base_revision",
+      "head_commit",
+      "generation",
+      "stable_checkpoint",
+      "writer",
+      "state",
+      "consistency",
+      "dirty_after_crash",
+      "unresolved_conflicts"
+    ]
+  }
+}

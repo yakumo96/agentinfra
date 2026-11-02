@@ -1,0 +1,13 @@
+[Unit]
+Description=agentinfra gatewayd (model routing, budgets, context protection)
+After=network-online.target
+
+[Service]
+User=gateway
+ExecStart=/opt/agentinfra/gateway/.venv/bin/gatewayd --config /etc/agentinfra/gateway.toml --listen 127.0.0.1:8080
+Restart=on-failure
+StateDirectory=agentinfra-gateway
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=multi-user.target

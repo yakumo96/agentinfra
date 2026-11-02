@@ -1,0 +1,104 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_fork",
+  "group": "workspace",
+  "description": "从 checkpoint、工作区当前头、commit 或 revision 分叉出新工作区，只写元数据。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "from": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "checkpoint_id": {
+                "$ref": "../../common/defs.json#/$defs/CheckpointId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "checkpoint_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "workspace_id": {
+                "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "workspace_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "commit_id": {
+                "$ref": "../../common/defs.json#/$defs/CommitId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "commit_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "revision": {
+                "$ref": "../../common/defs.json#/$defs/VersionSpec"
+              },
+              "repo": {
+                "$ref": "../../common/defs.json#/$defs/RepoId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "revision",
+              "repo"
+            ]
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "from"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "branch_id": {
+        "$ref": "../../common/defs.json#/$defs/BranchId"
+      },
+      "base_revision": {
+        "$ref": "../../common/defs.json#/$defs/RevisionId"
+      },
+      "head_commit": {
+        "$ref": "../../common/defs.json#/$defs/CommitId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "branch_id",
+      "base_revision",
+      "head_commit"
+    ]
+  }
+}

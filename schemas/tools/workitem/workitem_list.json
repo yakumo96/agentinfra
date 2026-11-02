@@ -1,0 +1,60 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "workitem_list",
+  "group": "workitem",
+  "description": "列工作项。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/WorkItemState"
+      },
+      "cursor": {
+        "$ref": "../../common/defs.json#/$defs/Cursor"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/WorkItem"
+        }
+      },
+      "next_cursor": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Cursor"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "items",
+      "next_cursor",
+      "truncated"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_blame",
+  "group": "workspace",
+  "description": "逐行指出写入它的 commit、actor 和工具调用。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "range": {
+        "$ref": "../../common/defs.json#/$defs/LineRange"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "path"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "lines": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/BlameLine"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "lines"
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+{"workspace_id": "ws_01JBQ3Z8Y4K6M7N8P9QRSTVWXY", "idempotency_key": "k", "ops": [{"op": "truncate", "path": "a"}]}

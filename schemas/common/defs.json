@@ -1,0 +1,684 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentinfra:common/defs",
+  "title": "共享定义",
+  "$defs": {
+    "RepoId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "RefName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"
+    },
+    "RevisionId": {
+      "type": "string",
+      "pattern": "^rev_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "CommitId": {
+      "type": "string",
+      "pattern": "^cm_[0-9a-f]{64}$"
+    },
+    "RootId": {
+      "type": "string",
+      "pattern": "^root_[0-9a-f]{64}$"
+    },
+    "BranchId": {
+      "type": "string",
+      "pattern": "^br_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "WorkspaceId": {
+      "type": "string",
+      "pattern": "^ws_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "CheckpointId": {
+      "type": "string",
+      "pattern": "^ck_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "RunId": {
+      "type": "string",
+      "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "WorkItemId": {
+      "type": "string",
+      "pattern": "^wi_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "ProposalId": {
+      "type": "string",
+      "pattern": "^pr_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "ArtifactId": {
+      "type": "string",
+      "pattern": "^art_[0-9a-f]{64}$"
+    },
+    "ActorId": {
+      "type": "string",
+      "pattern": "^act_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "OperationId": {
+      "type": "string",
+      "pattern": "^op_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "VersionSpec": {
+      "description": "revision、commit 或 ref 名",
+      "anyOf": [
+        {
+          "$ref": "../../common/defs.json#/$defs/RevisionId"
+        },
+        {
+          "$ref": "../../common/defs.json#/$defs/CommitId"
+        },
+        {
+          "$ref": "../../common/defs.json#/$defs/RefName"
+        }
+      ]
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "IdempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "harness 用会话 ID 和工具调用 ID 生成；同一次调用的重放天然幂等"
+    },
+    "Path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "工作区根下的规范化相对路径；`.` 表示根。拒绝 `..`、绝对路径和指向工作区外的符号链接（PATH_ESCAPE）"
+    },
+    "Glob": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "Cursor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "不透明分页游标"
+    },
+    "Limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "LineRange": {
+      "type": "object",
+      "properties": {
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "start_line",
+        "end_line"
+      ]
+    },
+    "Durability": {
+      "enum": [
+        "ephemeral",
+        "local-durable",
+        "archived"
+      ]
+    },
+    "Consistency": {
+      "enum": [
+        "filesystem-consistent",
+        "quiesced",
+        "best-effort"
+      ]
+    },
+    "WorkspaceState": {
+      "enum": [
+        "active",
+        "released",
+        "recovered"
+      ]
+    },
+    "RunState": {
+      "enum": [
+        "CREATED",
+        "STARTING",
+        "RUNNING",
+        "FINALIZING",
+        "SUCCEEDED",
+        "FAILED",
+        "CANCELLED",
+        "TIMED_OUT",
+        "LOST"
+      ]
+    },
+    "WorkItemState": {
+      "enum": [
+        "open",
+        "claimed",
+        "in_review",
+        "done",
+        "blocked",
+        "cancelled"
+      ]
+    },
+    "ProposalState": {
+      "enum": [
+        "PROPOSED",
+        "VALIDATING",
+        "READY",
+        "PUBLISHED",
+        "BLOCKED",
+        "REJECTED",
+        "SUPERSEDED"
+      ]
+    },
+    "Role": {
+      "enum": [
+        "coordinator",
+        "worker",
+        "human",
+        "admin"
+      ]
+    },
+    "Encoding": {
+      "enum": [
+        "utf-8",
+        "base64"
+      ]
+    },
+    "ErrorCode": {
+      "enum": [
+        "AUTHORIZATION_DENIED",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "REVISION_MISMATCH",
+        "TEXT_NOT_FOUND",
+        "TEXT_NOT_UNIQUE",
+        "PATH_ESCAPE",
+        "UNSUPPORTED_OPERATION",
+        "WORKSPACE_BUSY",
+        "LEASE_EXPIRED",
+        "FENCED_OUT",
+        "CHECKPOINT_NOT_READY",
+        "CONFLICT_MARKERS_PRESENT",
+        "NO_WORK_AVAILABLE",
+        "QUOTA_EXCEEDED",
+        "IDEMPOTENCY_CONFLICT",
+        "OPERATION_IN_PROGRESS",
+        "DURABILITY_NOT_MET"
+      ]
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "../../common/defs.json#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "operation_id": {
+              "$ref": "../../common/defs.json#/$defs/OperationId"
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "$ref": "../../common/defs.json#/$defs/Path"
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ]
+    },
+    "Content": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "encoding": {
+          "$ref": "../../common/defs.json#/$defs/Encoding"
+        },
+        "sha256": {
+          "$ref": "../../common/defs.json#/$defs/Sha256"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "next_offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "下一段的起始行号（从 1 开始）；读完为 null"
+        },
+        "total_lines": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "文本文件的总行数；二进制为 null"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "content",
+        "encoding",
+        "sha256",
+        "size",
+        "truncated",
+        "next_offset",
+        "total_lines"
+      ],
+      "description": "文本按行返回；二进制文件以 base64 返回，truncated 时用 artifact_read 取完整内容"
+    },
+    "Entry": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "dir",
+            "symlink"
+          ]
+        },
+        "size": {
+          "type": "integer"
+        },
+        "mode": {
+          "type": "string",
+          "pattern": "^[0-7]{3,4}$"
+        },
+        "target": {
+          "type": "string",
+          "description": "仅 symlink"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "kind",
+        "size",
+        "mode"
+      ]
+    },
+    "Match": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        },
+        "line": {
+          "type": "integer"
+        },
+        "column": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "line",
+        "column",
+        "text"
+      ]
+    },
+    "BlameLine": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer"
+        },
+        "commit_id": {
+          "$ref": "../../common/defs.json#/$defs/CommitId"
+        },
+        "actor_id": {
+          "$ref": "../../common/defs.json#/$defs/ActorId"
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/RunId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "line",
+        "commit_id",
+        "actor_id",
+        "tool_call_id",
+        "run_id"
+      ]
+    },
+    "Commit": {
+      "type": "object",
+      "properties": {
+        "commit_id": {
+          "$ref": "../../common/defs.json#/$defs/CommitId"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/CommitId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "root_id": {
+          "$ref": "../../common/defs.json#/$defs/RootId"
+        },
+        "actor_id": {
+          "$ref": "../../common/defs.json#/$defs/ActorId"
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/RunId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consistency": {
+          "$ref": "../../common/defs.json#/$defs/Consistency"
+        },
+        "changed_paths": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common/defs.json#/$defs/Path"
+          }
+        },
+        "at": {
+          "$ref": "../../common/defs.json#/$defs/Timestamp"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "commit_id",
+        "parent",
+        "root_id",
+        "actor_id",
+        "tool_call_id",
+        "run_id",
+        "consistency",
+        "changed_paths",
+        "at"
+      ]
+    },
+    "Change": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        },
+        "change": {
+          "enum": [
+            "added",
+            "modified",
+            "deleted",
+            "renamed",
+            "mode"
+          ]
+        },
+        "old_path": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "change"
+      ]
+    },
+    "Overlap": {
+      "type": "object",
+      "properties": {
+        "work_item_id": {
+          "$ref": "../../common/defs.json#/$defs/WorkItemId"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common/defs.json#/$defs/Glob"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "work_item_id",
+        "paths"
+      ]
+    },
+    "WorkItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "../../common/defs.json#/$defs/WorkItemId"
+        },
+        "repo": {
+          "$ref": "../../common/defs.json#/$defs/RepoId"
+        },
+        "title": {
+          "type": "string"
+        },
+        "spec": {
+          "type": "string"
+        },
+        "acceptance": {
+          "type": "string"
+        },
+        "scope_paths": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common/defs.json#/$defs/Glob"
+          }
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common/defs.json#/$defs/WorkItemId"
+          }
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "state": {
+          "$ref": "../../common/defs.json#/$defs/WorkItemState"
+        },
+        "claimed_by": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/ActorId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposal_id": {
+          "anyOf": [
+            {
+              "$ref": "../../common/defs.json#/$defs/ProposalId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "$ref": "../../common/defs.json#/$defs/Timestamp"
+        },
+        "updated_at": {
+          "$ref": "../../common/defs.json#/$defs/Timestamp"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "repo",
+        "title",
+        "spec",
+        "acceptance",
+        "scope_paths",
+        "depends_on",
+        "priority",
+        "state",
+        "claimed_by",
+        "workspace_id",
+        "proposal_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "EventKind": {
+      "enum": [
+        "workitem.created",
+        "workitem.updated",
+        "workitem.claimed",
+        "workitem.released",
+        "workitem.done",
+        "overlap.detected",
+        "proposal.submitted",
+        "proposal.validating",
+        "proposal.blocked",
+        "proposal.published",
+        "proposal.rejected",
+        "proposal.superseded",
+        "ref.advanced",
+        "run.finished",
+        "lease.expired",
+        "workspace.recovered"
+      ]
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "at": {
+          "$ref": "../../common/defs.json#/$defs/Timestamp"
+        },
+        "kind": {
+          "$ref": "../../common/defs.json#/$defs/EventKind"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "work_item",
+                "proposal",
+                "ref",
+                "run",
+                "workspace",
+                "lease"
+              ]
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "at",
+        "kind",
+        "aggregate",
+        "payload"
+      ]
+    }
+  }
+}

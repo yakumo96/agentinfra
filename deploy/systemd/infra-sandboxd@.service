@@ -1,0 +1,10 @@
+[Unit]
+Description=agentinfra infra-sandboxd for actor %i (FUSE workspaces, LXC container)
+After=infrad.service
+
+[Service]
+Type=notify
+# Root on the host: mounts FUSE, sets up idmapped mounts and the unprivileged container.
+ExecStart=/usr/local/bin/infra-sandboxd --actor %i --config /etc/agentinfra/sandboxd.toml
+Restart=on-failure
+KillMode=process

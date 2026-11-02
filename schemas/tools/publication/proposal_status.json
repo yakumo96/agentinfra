@@ -1,0 +1,121 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "proposal_status",
+  "group": "publication",
+  "description": "Proposal 的状态、队列位置、冲突和验证摘要。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "$ref": "../../common/defs.json#/$defs/ProposalId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "proposal_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "$ref": "../../common/defs.json#/$defs/ProposalId"
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/ProposalState"
+      },
+      "queue_position": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "conflicts": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        }
+      },
+      "blocked_reason": {
+        "anyOf": [
+          {
+            "enum": [
+              "merge_conflict",
+              "validation_failed",
+              "approval_required"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "validation": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "input_revision": {
+                "$ref": "../../common/defs.json#/$defs/RevisionId"
+              },
+              "validate_toml_sha256": {
+                "$ref": "../../common/defs.json#/$defs/Sha256"
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "receipt_run_id": {
+                "$ref": "../../common/defs.json#/$defs/RunId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "input_revision",
+              "validate_toml_sha256",
+              "passed",
+              "summary",
+              "receipt_run_id"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "published_revision": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/RevisionId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "proposal_id",
+      "state",
+      "queue_position",
+      "conflicts",
+      "blocked_reason",
+      "validation",
+      "published_revision"
+    ]
+  }
+}

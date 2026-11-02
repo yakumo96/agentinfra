@@ -1,0 +1,67 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "run_logs",
+  "group": "execution",
+  "description": "分页读取 run 的输出。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "run_id": {
+        "$ref": "../../common/defs.json#/$defs/RunId"
+      },
+      "stream": {
+        "enum": [
+          "stdout",
+          "stderr"
+        ]
+      },
+      "cursor": {
+        "$ref": "../../common/defs.json#/$defs/Cursor"
+      },
+      "limit": {
+        "$ref": "../../common/defs.json#/$defs/Limit"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "run_id",
+      "stream"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "chunk": {
+        "type": "string"
+      },
+      "encoding": {
+        "$ref": "../../common/defs.json#/$defs/Encoding"
+      },
+      "next_cursor": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Cursor"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "eof": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "chunk",
+      "encoding",
+      "next_cursor",
+      "eof"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{"workspace_id": "ws_01JBQ3Z8Y4K6M7N8P9QRSTVWXY", "idempotency_key": "sess_1:call_7", "expected_generation": 12,
+ "ops": [
+  {"op": "write", "path": "src/lib.rs", "content": "pub fn f() {}\n"},
+  {"op": "replace_text", "path": "README.md", "old": "v1", "new": "v2"},
+  {"op": "move", "from": "a.txt", "to": "b/a.txt"},
+  {"op": "chmod", "path": "run.sh", "mode": "0755"},
+  {"op": "delete", "path": "old.txt", "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}]}

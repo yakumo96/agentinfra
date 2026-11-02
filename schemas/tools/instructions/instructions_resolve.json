@@ -1,0 +1,76 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "instructions_resolve",
+  "group": "instructions",
+  "description": "取得某个路径适用的 Infra 规则和各作用域的 AGENTS.md，按 digest 缓存。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "bundle_id": {
+        "type": "string"
+      },
+      "digest": {
+        "$ref": "../../common/defs.json#/$defs/Sha256"
+      },
+      "resource_uri": {
+        "type": "string",
+        "pattern": "^infra://instructions/"
+      },
+      "infra_rules": {
+        "type": "string"
+      },
+      "scopes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "$ref": "../../common/defs.json#/$defs/Path"
+            },
+            "agents_md": {
+              "type": "string"
+            },
+            "sha256": {
+              "$ref": "../../common/defs.json#/$defs/Sha256"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "agents_md",
+            "sha256"
+          ]
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "bundle_id",
+      "digest",
+      "resource_uri",
+      "infra_rules",
+      "scopes"
+    ]
+  }
+}

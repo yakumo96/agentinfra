@@ -1,0 +1,74 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "proposal_submit",
+  "group": "publication",
+  "description": "冻结沙箱做一次 Quiesced 提交，把分支头作为候选送进目标 ref 的合并队列。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "work_item_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkItemId"
+      },
+      "message": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id",
+      "work_item_id",
+      "message"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "proposal_id": {
+        "$ref": "../../common/defs.json#/$defs/ProposalId"
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/ProposalState"
+      },
+      "candidate_commit": {
+        "$ref": "../../common/defs.json#/$defs/CommitId"
+      },
+      "supersedes": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/ProposalId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "overlaps": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Overlap"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "proposal_id",
+      "state",
+      "candidate_commit",
+      "supersedes",
+      "overlaps"
+    ]
+  }
+}

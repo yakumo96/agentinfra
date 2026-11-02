@@ -1,0 +1,83 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "run_status",
+  "group": "execution",
+  "description": "查询 run 状态。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "run_id": {
+        "$ref": "../../common/defs.json#/$defs/RunId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "run_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "run_id": {
+        "$ref": "../../common/defs.json#/$defs/RunId"
+      },
+      "state": {
+        "$ref": "../../common/defs.json#/$defs/RunState"
+      },
+      "exit_code": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "started_at": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Timestamp"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "finished_at": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Timestamp"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "output_commit": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/CommitId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "run_id",
+      "state",
+      "exit_code",
+      "started_at",
+      "finished_at",
+      "output_commit"
+    ]
+  }
+}

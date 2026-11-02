@@ -1,0 +1,17 @@
+[Unit]
+Description=agentinfra infrad (MCP endpoint, control plane, merge queue)
+After=postgresql.service network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=notify
+User=infra
+ExecStart=/usr/local/bin/infrad --config /etc/agentinfra/infrad.toml
+Restart=on-failure
+# infra-sandboxd units and LXC containers outlive infrad restarts
+KillMode=process
+StateDirectory=agentinfra
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,65 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_rebase",
+  "group": "workspace",
+  "description": "三方合并到新的目标 revision，得到以目标为基础的新工作区；冲突文件带冲突标记写入 overlay，不提交。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "target": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id",
+      "target"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "base_revision": {
+        "$ref": "../../common/defs.json#/$defs/RevisionId"
+      },
+      "commit_id": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/CommitId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "conflicts": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "base_revision",
+      "commit_id",
+      "conflicts"
+    ]
+  }
+}

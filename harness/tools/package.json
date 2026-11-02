@@ -1,0 +1,8 @@
+{
+  "name": "@agentinfra/harness-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generated Infra tool types, the MCP client and the four built-in tool mappings",
+  "exports": { ".": "./src/index.ts" }
+}

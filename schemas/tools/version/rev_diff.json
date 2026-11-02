@@ -1,0 +1,75 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "rev_diff",
+  "group": "version",
+  "description": "结构化比较两个版本；共享子树直接跳过。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "from": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      },
+      "to": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      },
+      "paths": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Glob"
+        }
+      },
+      "cursor": {
+        "$ref": "../../common/defs.json#/$defs/Cursor"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo",
+      "from",
+      "to"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "changed_paths": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Change"
+        }
+      },
+      "next_cursor": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Cursor"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "truncated": {
+        "type": "boolean"
+      },
+      "patch": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "changed_paths",
+      "next_cursor",
+      "truncated",
+      "patch"
+    ]
+  }
+}

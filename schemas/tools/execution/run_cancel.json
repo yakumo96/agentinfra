@@ -1,0 +1,39 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "run_cancel",
+  "group": "execution",
+  "description": "取消 run；立即返回已接受，终止并封存输出后才变成 CANCELLED。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "run_id": {
+        "$ref": "../../common/defs.json#/$defs/RunId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "run_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "accepted": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "accepted"
+    ]
+  }
+}

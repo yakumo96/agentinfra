@@ -1,0 +1,1 @@
+{"workspace_id": "workspace-1", "idempotency_key": "k", "ops": [{"op": "delete", "path": "a"}]}

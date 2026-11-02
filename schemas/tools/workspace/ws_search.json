@@ -1,0 +1,71 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_search",
+  "group": "workspace",
+  "description": "在工作区里按正则搜索文本。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "pattern": {
+        "type": "string",
+        "minLength": 1
+      },
+      "glob": {
+        "$ref": "../../common/defs.json#/$defs/Glob"
+      },
+      "case_sensitive": {
+        "type": "boolean",
+        "default": true
+      },
+      "cursor": {
+        "$ref": "../../common/defs.json#/$defs/Cursor"
+      },
+      "max_results": {
+        "$ref": "../../common/defs.json#/$defs/Limit"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "pattern"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "matches": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Match"
+        }
+      },
+      "next_cursor": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Cursor"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "matches",
+      "next_cursor",
+      "truncated"
+    ]
+  }
+}

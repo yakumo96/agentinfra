@@ -1,0 +1,50 @@
+[workspace]
+resolver = "3"
+members = [
+    "infra/crates/proto",
+    "infra/crates/fileops",
+    "infra/crates/workitem",
+    "infra/crates/publish",
+]
+# Absorbed from LayerFS v1.1.0 (see infra/UPSTREAM.layerfs.toml). They join `members`
+# once crates.io is reachable from the build environment, together with
+#   [patch.crates-io] fuser = { version = "=0.18.0", path = "infra/vendor/fuser-0.18.0" }
+# Until then they stay out so the std-only crates above build and test offline.
+# `cargo metadata --no-deps` over all of them passes (checked by `just check-absorbed`).
+exclude = [
+    "infra/crates/telemetry",
+    "infra/crates/content",
+    "infra/crates/store",
+    "infra/crates/store-sqlite",
+    "infra/crates/history",
+    "infra/crates/version",
+    "infra/crates/repo-init",
+    "infra/crates/overlay",
+    "infra/crates/workspace",
+    "infra/crates/fuse",
+    "infra/crates/bridge",
+    "infra/crates/sandboxd",
+    "infra/crates/testkit-sdk",
+    "infra/crates/testkit-docker",
+    "infra/vendor/fuser-0.18.0",
+]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[workspace.dependencies]
+infra-proto = { path = "infra/crates/proto" }
+infra-fileops = { path = "infra/crates/fileops" }
+infra-workitem = { path = "infra/crates/workitem" }
+infra-publish = { path = "infra/crates/publish" }

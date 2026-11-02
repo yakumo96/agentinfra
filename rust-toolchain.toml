@@ -1,0 +1,4 @@
+[toolchain]
+# Tested with 1.97.0. Minimum supported version is rust-version in Cargo.toml.
+channel = "stable"
+components = ["rustfmt", "clippy"]

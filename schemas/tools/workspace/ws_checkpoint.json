@@ -1,0 +1,59 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_checkpoint",
+  "group": "workspace",
+  "description": "给当前分支头打一个有名字的标记，便于 fork 或 restore。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 200
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "checkpoint_id": {
+        "$ref": "../../common/defs.json#/$defs/CheckpointId"
+      },
+      "commit_id": {
+        "$ref": "../../common/defs.json#/$defs/CommitId"
+      },
+      "generation": {
+        "type": "integer"
+      },
+      "durability": {
+        "$ref": "../../common/defs.json#/$defs/Durability"
+      },
+      "unchanged": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "checkpoint_id",
+      "commit_id",
+      "generation",
+      "durability",
+      "unchanged"
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "rev_read",
+  "group": "version",
+  "description": "读某个 revision 或 commit 里的文件。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "revision": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "起始行号，从 1 开始"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100000,
+        "description": "最多读取的行数"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo",
+      "revision",
+      "path"
+    ]
+  },
+  "outputSchema": {
+    "$ref": "../../common/defs.json#/$defs/Content"
+  }
+}

@@ -1,0 +1,219 @@
+# What we took from LayerFS, where it lives now, what we changed and what we
+# decided not to take. Read by tools/upstream/absorb.py.
+#
+# Absorbed code is ours: we change it freely. Upstream changes are reviewed per
+# release (`just upstream-diff layerfs <mirror-commit>`), and each one we port goes
+# through our own merge queue as a normal proposal with a link to the upstream
+# commit. Changes we decline are recorded under [[rejected]] so they are not
+# re-evaluated next time.
+
+[upstream]
+name = "layerfs"
+repo = "https://github.com/Ephemeral-AI-Lab/layerfs"
+license = "MIT"
+license_file = "LICENSE"
+mirror_branch = "upstream/layerfs"
+base_tag = "v1.1.0"
+base_commit = "9f97a7ec95b662e9cb288704afa165feff132cfa"
+# Our mirror commit holding that snapshot; absorption reads from here.
+mirror_commit = "97db695bded671023c56a331a92d7fe084b561d0"
+absorbed_on = "2026-11-02"
+
+[transform]
+# Upstream crates are edition 2021; they keep it after absorption.
+edition = "2021"
+rust_version = "1.85"
+# Applied to every text file of an absorbed crate, in addition to crate renames.
+replace = [
+  ["CARGO_BIN_EXE_layerfs-daemon", "CARGO_BIN_EXE_infra-sandboxd"],
+]
+# Runtime string literals with a `layerfs` prefix (thread names, temp-file
+# prefixes, LAYERFS_* settings) are left as they are and renamed when touched.
+
+# role: product = part of Infra; test-support = only kept so upstream tests keep
+# running until they are ported to our own fixtures.
+[[crate]]
+upstream = "layerfs-telemetry"
+dir = "telemetry"
+package = "infra-telemetry"
+role = "product"
+what = "parent/child timing trees"
+
+[[crate]]
+upstream = "layerfs-content"
+dir = "content"
+package = "infra-content"
+role = "product"
+what = "canonical objects, CDC chunking, structural COW trees, merge engine, bounded reads"
+
+[[crate]]
+upstream = "layerfs-storage"
+dir = "store"
+package = "infra-store"
+role = "product"
+what = "content-addressed encoding, FULL/DELTA records, zstd packs, Save pipeline"
+
+[[crate]]
+upstream = "layerfs-persistence"
+dir = "store-sqlite"
+package = "infra-store-sqlite"
+role = "product"
+what = "the one SQLite content store: profiles, packs, history rows, admission"
+
+[[crate]]
+upstream = "layerfs-history"
+dir = "history"
+package = "infra-history"
+role = "product"
+what = "immutable history metadata: LayerStacks, Branches, Commits, Layers"
+
+[[crate]]
+upstream = "layerfs-project"
+dir = "repo-init"
+package = "infra-repo-init"
+role = "product"
+what = "namespace import: a repository or environment rootfs into the store"
+
+[[crate]]
+upstream = "layerfs-store-service"
+dir = "version"
+package = "infra-version"
+role = "product"
+what = "store engine: typed reads, file changes, branch history, compare and merge"
+
+[[crate]]
+upstream = "layerfs-overlay"
+dir = "overlay"
+package = "infra-overlay"
+role = "product"
+what = "per-workspace disposable overlay database"
+
+[[crate]]
+upstream = "layerfs-workspace"
+dir = "workspace"
+package = "infra-workspace"
+role = "product"
+what = "workspace filesystem semantics, captured construction for per-call commits"
+
+[[crate]]
+upstream = "layerfs-fuse"
+dir = "fuse"
+package = "infra-fuse"
+role = "product"
+what = "kernel connection, request dispatch, coherence"
+
+[[crate]]
+upstream = "layerfs-bridge"
+dir = "bridge"
+package = "infra-bridge"
+role = "product"
+what = "authenticated bounded channels; becomes the infrad <-> infra-sandboxd protocol"
+
+[[crate]]
+upstream = "layerfs-daemon"
+dir = "sandboxd"
+package = "infra-sandboxd"
+role = "product"
+what = "workspace service: mounts, commit composition, the daemon binary"
+renames = [["src/bin/layerfs-daemon.rs", "src/bin/infra-sandboxd.rs"]]
+
+[[crate]]
+upstream = "layerfs-api"
+dir = "testkit-sdk"
+package = "infra-testkit-sdk"
+role = "test-support"
+what = "LayerFS SDK surface; daemon tests drive it. Replaced by the MCP layer in product code"
+
+[[crate]]
+upstream = "layerfs-sandbox"
+dir = "testkit-docker"
+package = "infra-testkit-docker"
+role = "test-support"
+what = "Docker Engine sandbox used by upstream fixtures. Product execution is LXC (infra/crates/sandbox)"
+
+[[copy]]
+upstream = "core/vendor/fuser-0.18.0"
+dest = "infra/vendor/fuser-0.18.0"
+what = "fuser 0.18.0 with LayerFS's three provenance-pinned patches (timestamps, receive-loop lifecycle, receive buffer)"
+
+[[copy]]
+upstream = "core/patches/fuser-0.18.0"
+dest = "infra/vendor/patches/fuser-0.18.0"
+what = "patch files and provenance records for the vendored fuser"
+
+[[copy]]
+upstream = "LICENSE"
+dest = "third_party/licenses/layerfs.txt"
+
+# Needed in the root Cargo.toml when the absorbed crates join the workspace.
+[workspace_requirements]
+patch_crates_io = 'fuser = { version = "=0.18.0", path = "infra/vendor/fuser-0.18.0" }'
+profile_test = "opt-level = 1; zstd-sys at opt-level 3"
+
+# ------------------------------------------------------------------ our changes
+[[change]]
+id = "durable-profile"
+crates = ["store-sqlite"]
+status = "planned"
+what = "Run the Durable profile (WAL, synchronous=FULL); object admission returns ids only after commit."
+why = "Upstream executes Disposable only (synchronous=OFF, no crash durability). Our Local-durable level requires it."
+
+[[change]]
+id = "pointers-in-postgres"
+crates = ["history", "version", "sandboxd"]
+status = "planned"
+what = "Branch heads and refs are authoritative in PostgreSQL under fencing tokens; the store keeps immutable commits and layers."
+why = "One place for mutable pointers, conditional updates and fencing across workspaces, the merge queue and restore."
+
+[[change]]
+id = "host-sandboxd"
+crates = ["sandboxd", "bridge"]
+status = "planned"
+what = "The daemon runs on the host, one per actor, and serves FUSE mounts into unprivileged LXC containers via idmapped mounts."
+why = "No /dev/fuse or mount rights inside containers; LXC instead of Docker."
+
+[[change]]
+id = "fuse-passthrough"
+crates = ["fuse", "overlay", "workspace"]
+status = "planned"
+what = "Unmodified files: passthrough to a shared decompressed cache (one page cache). Writes: reflink copy-up into the overlay, then passthrough. Metadata over FUSE io_uring."
+why = "Upstream measures FUSE sequential writes at 0.31x of libfuse passthrough; Linux 6.18 has passthrough, io_uring and idmapped FUSE."
+
+[[change]]
+id = "lww-restricted"
+crates = ["content", "version"]
+status = "planned"
+what = ".lww may only list regenerable artifacts; .lww itself is a protected path."
+why = "Last-writer-wins on source or security config would silently drop work."
+
+[[change]]
+id = "rename"
+crates = ["*"]
+status = "done"
+what = "Crates moved under infra/crates and renamed layerfs-* -> infra-*; edition 2021 pinned per crate."
+
+# ------------------------------------------------------- upstream rules we do not adopt
+[[rejected]]
+upstream_rule = "Disposable / WAL / synchronous=OFF is the only permitted profile (AGENTS.md, owner 2026-10-07)"
+reason = "Conflicts with Local-durable commits; see change durable-profile."
+
+[[rejected]]
+upstream_rule = "Daemon runs inside the Sandbox container; SDK Store calls run in the SDK process"
+reason = "infrad owns store access and infra-sandboxd runs on the host; there is no SDK process."
+
+[[rejected]]
+upstream_rule = "macOS and Windows worker routes (dsh Live), plugin-neutral worker endpoint"
+reason = "Single Linux host; not needed."
+
+[[rejected]]
+upstream_rule = "Per-commit production-LOC comparison and file-layout listing format"
+reason = "Upstream repository process, not product behaviour."
+
+[[adopted_rules]]
+rule = "One writer at a time on the content store; heavy work before the publication lane, only head check + merge + publish inside it"
+
+[[adopted_rules]]
+rule = "One attempt per operation: no automatic retry or busy handler; exact failure and uncertain-outcome custody"
+
+[[adopted_rules]]
+rule = "fuser 0.18.0 stays pinned with its provenance-checked patches"

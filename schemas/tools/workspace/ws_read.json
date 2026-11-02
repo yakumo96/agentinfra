@@ -1,0 +1,44 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_read",
+  "group": "workspace",
+  "description": "读工作区里的文件。",
+  "mutates": false,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "起始行号，从 1 开始"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100000,
+        "description": "最多读取的行数"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "workspace_id",
+      "path"
+    ]
+  },
+  "outputSchema": {
+    "$ref": "../../common/defs.json#/$defs/Content"
+  },
+  "harness_builtin": [
+    "read"
+  ]
+}

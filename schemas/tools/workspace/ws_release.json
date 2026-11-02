@@ -1,0 +1,50 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_release",
+  "group": "workspace",
+  "description": "释放工作区；未发布的分支按保留期保留。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "released": {
+        "const": true
+      },
+      "retained_until": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Timestamp"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "released",
+      "retained_until"
+    ]
+  }
+}

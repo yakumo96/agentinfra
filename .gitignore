@@ -1,0 +1,11 @@
+/target/
+**/target/
+node_modules/
+dist/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+/.tmp/
+/var/

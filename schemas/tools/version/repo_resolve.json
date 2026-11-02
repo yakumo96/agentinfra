@@ -1,0 +1,48 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "repo_resolve",
+  "group": "version",
+  "description": "把 ref 解析成 revision。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "ref": {
+        "$ref": "../../common/defs.json#/$defs/RefName"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo",
+      "ref"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "revision": {
+        "$ref": "../../common/defs.json#/$defs/RevisionId"
+      },
+      "root_id": {
+        "$ref": "../../common/defs.json#/$defs/RootId"
+      },
+      "version": {
+        "type": "integer"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "revision",
+      "root_id",
+      "version"
+    ]
+  }
+}

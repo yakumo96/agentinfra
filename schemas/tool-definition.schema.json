@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentinfra:tool-definition",
+  "title": "Infra MCP 工具定义",
+  "description": "schemas/tools/<group>/<name>.json 的格式。inputSchema、outputSchema 对应 MCP 的同名字段，发布前由 tools/schema 内联 $ref。",
+  "type": "object",
+  "required": ["name", "group", "description", "mutates", "roles", "inputSchema", "outputSchema"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$"},
+    "group": {"enum": ["instructions", "workspace", "version", "execution", "workitem", "publication", "artifact"]},
+    "description": {"type": "string", "minLength": 1},
+    "mutates": {"type": "boolean", "description": "改状态的工具必须带 idempotency_key"},
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["coordinator", "worker", "human", "admin"]},
+      "description": "tools/list 只返回令牌角色可调用的工具"
+    },
+    "harness_builtin": {
+      "type": "array",
+      "items": {"enum": ["read", "write", "edit", "bash"]},
+      "description": "harness 内置工具的映射目标；harness 不再把它作为 MCP 工具暴露给模型"
+    },
+    "long_running": {"type": "boolean", "description": "立即返回 ID，再用状态工具查询"},
+    "inputSchema": {"type": "object", "required": ["type"], "properties": {"type": {"const": "object"}}},
+    "outputSchema": {"type": "object"}
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "workitem_claim",
+  "group": "workitem",
+  "description": "原子认领一个可做的工作项，并从当前 main（或上一个认领者的分支头）fork 出工作区。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "repo"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "work_item": {
+        "$ref": "../../common/defs.json#/$defs/WorkItem"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "lease_expires_at": {
+        "$ref": "../../common/defs.json#/$defs/Timestamp"
+      },
+      "overlaps": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Overlap"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "work_item",
+      "workspace_id",
+      "lease_expires_at",
+      "overlaps"
+    ]
+  }
+}

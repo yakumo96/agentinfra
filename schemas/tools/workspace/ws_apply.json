@@ -1,0 +1,244 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_apply",
+  "group": "workspace",
+  "description": "一次调用里的多个文件操作先全部校验（期望值、文本匹配、路径安全），任一不通过整体拒绝；通过后逐个写入并在调用结束时生成一个 commit。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "expected_generation": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "ops": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "const": "write"
+                },
+                "path": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "encoding": {
+                  "$ref": "../../common/defs.json#/$defs/Encoding",
+                  "default": "utf-8"
+                },
+                "expected_sha256": {
+                  "$ref": "../../common/defs.json#/$defs/Sha256"
+                },
+                "mode": {
+                  "type": "string",
+                  "pattern": "^[0-7]{3,4}$"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "path",
+                "content"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "const": "replace_text"
+                },
+                "path": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "old": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "new": {
+                  "type": "string"
+                },
+                "expected_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "path",
+                "old",
+                "new"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "path",
+                "edits"
+              ],
+              "description": "pi 的 edit 语义：每处替换都对照本操作之前的文件内容匹配，旧文本必须恰好出现一次，各处匹配不得重叠，一次性全部替换",
+              "properties": {
+                "op": {
+                  "const": "edit"
+                },
+                "path": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "edits": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "old",
+                      "new"
+                    ],
+                    "properties": {
+                      "old": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "new": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "const": "delete"
+                },
+                "path": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "expected_sha256": {
+                  "$ref": "../../common/defs.json#/$defs/Sha256"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "path"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "const": "move"
+                },
+                "from": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "to": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "from",
+                "to"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "const": "chmod"
+                },
+                "path": {
+                  "$ref": "../../common/defs.json#/$defs/Path"
+                },
+                "mode": {
+                  "type": "string",
+                  "pattern": "^[0-7]{3,4}$"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "op",
+                "path",
+                "mode"
+              ]
+            }
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 1000
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id",
+      "ops"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "generation": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "commit_id": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/CommitId"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "up_to_date": {
+        "type": "boolean"
+      },
+      "changed_paths": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Path"
+        }
+      },
+      "durability": {
+        "$ref": "../../common/defs.json#/$defs/Durability"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "generation",
+      "commit_id",
+      "up_to_date",
+      "changed_paths",
+      "durability"
+    ]
+  },
+  "harness_builtin": [
+    "write",
+    "edit"
+  ]
+}

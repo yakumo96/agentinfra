@@ -1,0 +1,64 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "rev_log",
+  "group": "version",
+  "description": "沿 commit 链列历史，可按路径过滤。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "revision": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "cursor": {
+        "$ref": "../../common/defs.json#/$defs/Cursor"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo",
+      "revision"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "commits": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Commit"
+        }
+      },
+      "next_cursor": {
+        "anyOf": [
+          {
+            "$ref": "../../common/defs.json#/$defs/Cursor"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "commits",
+      "next_cursor",
+      "truncated"
+    ]
+  }
+}

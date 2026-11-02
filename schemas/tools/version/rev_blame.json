@@ -1,0 +1,50 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "rev_blame",
+  "group": "version",
+  "description": "某个版本里文件的逐步 blame。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repo": {
+        "$ref": "../../common/defs.json#/$defs/RepoId"
+      },
+      "revision": {
+        "$ref": "../../common/defs.json#/$defs/VersionSpec"
+      },
+      "path": {
+        "$ref": "../../common/defs.json#/$defs/Path"
+      },
+      "range": {
+        "$ref": "../../common/defs.json#/$defs/LineRange"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "repo",
+      "revision",
+      "path"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "lines": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/BlameLine"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "lines"
+    ]
+  }
+}

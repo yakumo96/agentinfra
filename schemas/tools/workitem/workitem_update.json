@@ -1,0 +1,80 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "workitem_update",
+  "group": "workitem",
+  "description": "更新工作项字段或状态。协调者可改字段、取消、标记受阻；工作者只能更新自己认领的项的说明。",
+  "mutates": true,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "work_item_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkItemId"
+      },
+      "patch": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "spec": {
+            "type": "string"
+          },
+          "acceptance": {
+            "type": "string"
+          },
+          "scope_paths": {
+            "type": "array",
+            "items": {
+              "$ref": "../../common/defs.json#/$defs/Glob"
+            }
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "../../common/defs.json#/$defs/WorkItemId"
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "state": {
+        "enum": [
+          "open",
+          "blocked",
+          "cancelled"
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "work_item_id"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "work_item": {
+        "$ref": "../../common/defs.json#/$defs/WorkItem"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "work_item"
+    ]
+  }
+}

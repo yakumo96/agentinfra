@@ -1,0 +1,79 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "ws_restore",
+  "group": "workspace",
+  "description": "生成一个根等于目标的新 commit；终止该工作区的运行并换发 fencing token。",
+  "mutates": true,
+  "roles": [
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "idempotency_key": {
+        "$ref": "../../common/defs.json#/$defs/IdempotencyKey"
+      },
+      "workspace_id": {
+        "$ref": "../../common/defs.json#/$defs/WorkspaceId"
+      },
+      "target": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "checkpoint_id": {
+                "$ref": "../../common/defs.json#/$defs/CheckpointId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "checkpoint_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "commit_id": {
+                "$ref": "../../common/defs.json#/$defs/CommitId"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "commit_id"
+            ]
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "idempotency_key",
+      "workspace_id",
+      "target"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "generation": {
+        "type": "integer"
+      },
+      "commit_id": {
+        "$ref": "../../common/defs.json#/$defs/CommitId"
+      },
+      "cancelled_runs": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/RunId"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "generation",
+      "commit_id",
+      "cancelled_runs"
+    ]
+  }
+}

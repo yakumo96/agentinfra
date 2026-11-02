@@ -1,0 +1,54 @@
+{
+  "$schema": "../../tool-definition.schema.json",
+  "name": "events_wait",
+  "group": "workitem",
+  "description": "长轮询事件；至少投递一次，按事件 ID 去重。",
+  "mutates": false,
+  "roles": [
+    "coordinator",
+    "worker",
+    "admin"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "since": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "kinds": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/EventKind"
+        }
+      },
+      "timeout_s": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 60,
+        "default": 30
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "events": {
+        "type": "array",
+        "items": {
+          "$ref": "../../common/defs.json#/$defs/Event"
+        }
+      },
+      "last_event_id": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "events",
+      "last_event_id"
+    ]
+  }
+}
