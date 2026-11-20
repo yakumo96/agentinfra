@@ -48,3 +48,7 @@ just absorb-layerfs  # 按 UPSTREAM.layerfs.toml 从 upstream/layerfs 分支重�
 ## 当前状态
 
 见 `docs/STATUS.md`。
+
+## 许可证
+
+MIT，见 `LICENSE`。吸收的第三方代码及其许可证见 `third_party/NOTICES.md`。

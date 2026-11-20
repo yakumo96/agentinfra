@@ -16,7 +16,7 @@ mirror_branch = "upstream/layerfs"
 base_tag = "v1.1.0"
 base_commit = "9f97a7ec95b662e9cb288704afa165feff132cfa"
 # Our mirror commit holding that snapshot; absorption reads from here.
-mirror_commit = "97db695bded671023c56a331a92d7fe084b561d0"
+mirror_commit = "d14a93e49fa4f6921e3363b9c97f1157e8b30ec9"
 absorbed_on = "2026-11-02"
 
 [transform]
