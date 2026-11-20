@@ -19,8 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-Code under infra/crates/{telemetry,content,store,store-sqlite,history,repo-init,
-version,overlay,workspace,fuse,bridge,sandboxd,testkit-sdk,testkit-docker} and
-infra/vendor/ comes from LayerFS and fuser, both MIT licensed; see
-third_party/NOTICES.md and third_party/licenses/.
