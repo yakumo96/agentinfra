@@ -2,6 +2,11 @@
 
 The proxy writes originals here when it compresses; `context_retrieve` reads
 from the same table; there is one retention policy. The file is 0600.
+
+唯一的原文存储（Headroom 的 CCR，合并成一份）。
+
+代理压缩时把原文写到这里；`context_retrieve` 从同一张表读取；只有一套保留策略。
+文件权限为 0600。
 """
 from __future__ import annotations
 

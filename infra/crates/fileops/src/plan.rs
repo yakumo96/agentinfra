@@ -10,6 +10,7 @@ const DEFAULT_DIR_MODE: u32 = 0o755;
 const MAX_SYMLINK_HOPS: usize = 40;
 
 /// One `ws_apply` operation, already decoded from JSON.
+/// 一个 `ws_apply` 操作，已从 JSON 解码。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Op {
     Write {
@@ -26,6 +27,7 @@ pub enum Op {
     },
     /// pi's `edit`: every `(old, new)` is matched against the file as it was
     /// before this op; each `old` must occur exactly once and matches must not overlap.
+    /// pi 的 `edit`：每个 `(old, new)` 都对照本操作之前的文件匹配；每个 `old` 必须恰好出现一次，且各处匹配不得重叠。
     Edit {
         path: String,
         edits: Vec<(String, String)>,
@@ -45,9 +47,11 @@ pub enum Op {
 }
 
 /// What the workspace writer does, in order, once the whole call validated.
+/// 整个调用校验通过后，工作区写入方按顺序执行的动作。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     /// `mkdir -p` with default directory mode.
+    /// `mkdir -p`，使用默认目录权限。
     MakeDirs {
         path: NormPath,
     },
@@ -73,6 +77,7 @@ pub enum Action {
 pub struct Plan {
     pub actions: Vec<Action>,
     /// Sorted, unique. Empty means the call changes nothing.
+    /// 已排序、去重。为空表示这次调用不改变任何东西。
     pub changed_paths: Vec<NormPath>,
 }
 
@@ -163,6 +168,7 @@ impl<'a> Stage<'a> {
 
     /// Resolve symlinks in every directory component (and the final one when
     /// `follow_final`), refusing anything that leaves the workspace.
+    /// 解析每个目录组成部分中的符号链接（`follow_final` 时也解析最后一个），拒绝任何离开工作区的路径。
     fn resolve(&self, p: &NormPath, follow_final: bool) -> InfraResult<NormPath> {
         let mut cur = NormPath::root();
         let mut queue: VecDeque<String> = p.components().map(str::to_owned).collect();
@@ -193,6 +199,7 @@ impl<'a> Stage<'a> {
     }
 
     /// Stage missing parent directories of `p`; error if one is not a directory.
+    /// 暂存 `p` 缺失的父目录；若某个父路径不是目录则报错。
     fn ensure_parents(&mut self, p: &NormPath, actions: &mut Vec<Action>) -> InfraResult<()> {
         let Some(parent) = p.parent() else {
             return Ok(());
@@ -226,6 +233,7 @@ impl<'a> Stage<'a> {
 
     /// `expected_sha256` speaks about the state before this call, so it is only
     /// meaningful on the first operation that touches a path.
+    /// `expected_sha256` 说的是本次调用之前的状态，所以只在第一个触及该路径的操作上有意义。
     fn check_expected(&self, p: &NormPath, expected: Option<&str>) -> InfraResult<()> {
         let Some(expected) = expected else {
             return Ok(());
@@ -284,6 +292,10 @@ fn count_matches(haystack: &str, needle: &str) -> usize {
 ///
 /// Nothing is written when this returns an error, and the error names the
 /// failing op. `generation` is the workspace's current generation.
+///
+/// 对照 `view` 校验每个操作，返回要执行的写入。
+///
+/// 返回错误时什么都不写，错误会指明失败的操作。`generation` 是工作区当前的 generation。
 pub fn plan(
     view: &dyn FileView,
     ops: &[Op],

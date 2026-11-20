@@ -1,4 +1,5 @@
 -- Table constraints that back the schemas' enums and invariants.
+-- 支撑 schema 枚举和不变式的表约束。
 SET search_path = infra, public;
 DO $$
 BEGIN

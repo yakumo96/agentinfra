@@ -36,11 +36,11 @@ def store(tmp_path):
 def test_regions_by_position():
     body = conversation(4)
     regions = {(s.message, s.block): s.region for s in classify_anthropic(body, last_turns=2)}
-    assert regions[(0, None)] == "protected"  # first user message
-    assert regions[(1, None)] == "kept"  # old assistant tool_use: not compressible
-    assert regions[(2, 0)] == "compressible"  # old tool result
+    assert regions[(0, None)] == "protected"  # first user message / 第一条用户消息
+    assert regions[(1, None)] == "kept"  # old assistant tool_use: not compressible / 较早的 assistant tool_use：不可压缩
+    assert regions[(2, 0)] == "compressible"  # old tool result / 较早的工具结果
     assert regions[(4, 0)] == "compressible"
-    assert all(regions[(i, None)] == "protected" for i in (5, 6, 7, 8))  # last two turns
+    assert all(regions[(i, None)] == "protected" for i in (5, 6, 7, 8))  # last two turns / 最近两轮
 
 
 def test_only_old_tool_results_change_and_originals_are_retrievable(store):
@@ -56,6 +56,7 @@ def test_only_old_tool_results_change_and_originals_are_retrievable(store):
     assert store.get(report.compressed[0]) == BIG
     assert report.tokens_after < report.tokens_before
     # tool_use / tool_result pairing is intact
+    # tool_use / tool_result 配对保持完整
     assert [b["tool_use_id"] for m in out["messages"][2::2] for b in m["content"]] == ["t0", "t1", "t2", "t3"]
 
 

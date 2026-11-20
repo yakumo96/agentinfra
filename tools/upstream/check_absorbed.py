@@ -3,6 +3,11 @@
 Temporarily lists every absorbed crate as a workspace member (plus the fuser
 patch they need), runs `cargo metadata --no-deps --offline`, and restores the
 root Cargo.toml. Nothing is compiled and no build script runs.
+
+不构建、只检查吸收 crate 的清单。
+
+临时把每个吸收的 crate 列为 workspace 成员（加上它们需要的 fuser 补丁），运行
+`cargo metadata --no-deps --offline`，然后恢复根 Cargo.toml。不编译任何东西，也不运行构建脚本。
 """
 from __future__ import annotations
 

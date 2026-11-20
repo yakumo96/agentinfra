@@ -1,5 +1,7 @@
 // The harness's four built-in tools keep pi's parameter shapes and call Infra.
 // These targets are not exposed to the model as MCP tools a second time.
+// harness 的四个内置工具沿用 pi 的参数形态，调用 Infra。
+// 这些目标不会再以 MCP 工具的形式重复暴露给模型。
 import type {
   ErrorCode,
   InfraToolName,
@@ -11,7 +13,8 @@ import type {
 
 export type BuiltinName = "read" | "write" | "edit" | "bash";
 
-/** pi coding-agent tool inputs (packages/coding-agent/src/core/tools). */
+/** pi coding-agent tool inputs (packages/coding-agent/src/core/tools).
+ * pi coding-agent 的工具输入（packages/coding-agent/src/core/tools）。 */
 export interface PiRead { path: string; offset?: number; limit?: number }
 export interface PiWrite { path: string; content: string }
 export interface PiEdit { path: string; edits: Array<{ oldText: string; newText: string }> }
@@ -22,7 +25,8 @@ export interface CallContext {
   sessionId: string;
   toolCallId: string;
   workspaceId: string;
-  /** Where the workspace is mounted inside the container, e.g. /workspaces/ws_… */
+  /** Where the workspace is mounted inside the container, e.g. /workspaces/ws_…
+   * 工作区在容器内的挂载点，例如 /workspaces/ws_… */
   mountPoint: string;
 }
 
@@ -37,7 +41,8 @@ export class PathOutsideWorkspace extends Error {
   }
 }
 
-/** Same session + same tool call ⇒ same key, so a replayed call is naturally idempotent. */
+/** Same session + same tool call ⇒ same key, so a replayed call is naturally idempotent.
+ * 同一会话 + 同一工具调用 ⇒ 同一个键，所以重放的调用天然幂等。 */
 export function idempotencyKey(ctx: CallContext): string {
   return `${ctx.sessionId}:${ctx.toolCallId}`;
 }
@@ -45,6 +50,8 @@ export function idempotencyKey(ctx: CallContext): string {
 /**
  * pi accepts relative or absolute paths. Absolute paths are only valid inside
  * the workspace mount; everything else is refused before reaching Infra.
+ *
+ * pi 接受相对或绝对路径。绝对路径只在工作区挂载点内有效；其余的在到达 Infra 之前就被拒绝。
  */
 export function workspacePath(path: string, ctx: CallContext): string {
   if (!path.startsWith("/")) return path === "" ? "." : path;
@@ -107,7 +114,8 @@ export function mapBuiltin<K extends BuiltinName>(tool: K, input: PiInputs[K], c
   throw new Error(`unknown built-in tool ${String(tool)}`);
 }
 
-/** Text the model sees for a successful built-in call. */
+/** Text the model sees for a successful built-in call.
+ * 内置工具调用成功时模型看到的文本。 */
 export function renderResult(tool: BuiltinName, input: PiInputs[BuiltinName], output: unknown): string {
   switch (tool) {
     case "read": {
@@ -141,7 +149,8 @@ export function renderResult(tool: BuiltinName, input: PiInputs[BuiltinName], ou
   }
 }
 
-/** Errors are reported to the model as text; retryable ones say so. */
+/** Errors are reported to the model as text; retryable ones say so.
+ * 错误以文本形式报告给模型；可重试的会注明。 */
 export function renderError(err: { code: ErrorCode; message: string; retryable: boolean }): string {
   return `${err.code}: ${err.message}${err.retryable ? " (retryable)" : ""}`;
 }

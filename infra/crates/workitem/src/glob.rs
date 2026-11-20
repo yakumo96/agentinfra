@@ -1,5 +1,6 @@
 //! Path globs: `/`-separated segments; `**` is any number of segments,
 //! `*` any run of non-`/` characters, `?` one character, `[...]` a class.
+//! 路径 glob：以 `/` 分段；`**` 匹配任意多段，`*` 匹配任意一串非 `/` 字符，`?` 匹配一个字符，`[...]` 是字符类。
 
 fn segments(s: &str) -> Vec<&str> {
     s.split('/')
@@ -8,6 +9,7 @@ fn segments(s: &str) -> Vec<&str> {
 }
 
 /// Does `pattern` match the concrete relative `path`?
+/// `pattern` 是否匹配具体的相对路径 `path`？
 pub fn matches(pattern: &str, path: &str) -> bool {
     match_segs(&segments(pattern), &segments(path))
 }
@@ -64,6 +66,7 @@ fn has_wild(seg: &str) -> bool {
 }
 
 /// Could some path match both patterns? Conservative for wildcard segments.
+/// 是否存在同时匹配两个模式的路径？对通配段采取保守判断。
 pub fn may_overlap(a: &str, b: &str) -> bool {
     overlap_segs(&segments(a), &segments(b))
 }

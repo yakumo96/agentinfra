@@ -26,6 +26,7 @@ fn bad(name: &'static str, path: &'static str) -> Entry {
 
 /// Roots are the list of entries folded in, in order. Two entries touching the
 /// same path conflict. Validation fails if a bad entry is in the root.
+/// 根是按顺序折叠进来的条目列表。两个条目触及同一路径即冲突。根里有坏条目时验证失败。
 #[derive(Default)]
 struct Fake {
     rev: u32,
@@ -157,7 +158,7 @@ fn failed_batch_is_bisected_to_the_bad_entry() {
     let mut f = Fake::default();
     let mut s = BatchSizer::new(8);
     s.success();
-    s.success(); // size 4
+    s.success(); // size 4 / 批大小 4
     let out = run_batch(&mut f, &mut s, &pick(&["a", "b", "c", "d"])).unwrap();
     assert_eq!(published(&out[0]), Some(1));
     assert_eq!(published(&out[1]), Some(1));
@@ -171,6 +172,7 @@ fn failed_batch_is_bisected_to_the_bad_entry() {
     );
     assert_eq!(published(&out[3]), Some(2));
     // abcd fails, ab passes, cd fails, c fails, d passes
+    // abcd 失败，ab 通过，cd 失败，c 失败，d 通过
     assert_eq!(f.validations, 5);
     assert_eq!(Fake::names(&f.root), vec!["a", "b", "d"]);
     assert_eq!(s.size(), 1);
@@ -180,7 +182,7 @@ fn failed_batch_is_bisected_to_the_bad_entry() {
 fn conflicts_leave_the_batch_without_shrinking_it() {
     let mut f = Fake::default();
     let mut s = BatchSizer::default();
-    s.success(); // size 2
+    s.success(); // size 2 / 批大小 2
     let out = run_batch(&mut f, &mut s, &pick(&["a", "a2"])).unwrap();
     assert_eq!(published(&out[0]), Some(1));
     assert_eq!(

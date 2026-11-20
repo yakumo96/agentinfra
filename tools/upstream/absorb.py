@@ -8,6 +8,15 @@
     python3 tools/upstream/absorb.py diff layerfs <from-commit> <to-commit>
         Print the upstream change between two mirror commits, translated into
         our paths and crate names, ready for review and `git apply -3`.
+
+按 infra/UPSTREAM.<name>.toml 把上游镜像吸收进 infra/。
+
+    python3 tools/upstream/absorb.py init layerfs [--force]
+        从镜像分支把映射的 crate 复制到 infra/crates/，重命名 crate 和 Rust 路径。
+        只执行一次；之后代码归我们所有，原地修改。
+
+    python3 tools/upstream/absorb.py diff layerfs <from-commit> <to-commit>
+        输出两个镜像提交之间的上游变更，翻译成我们的路径和 crate 名，可直接评审并 `git apply -3`。
 """
 from __future__ import annotations
 
@@ -40,6 +49,7 @@ class Translator:
         self.crates = cfg["crate"]
         self.extra = [tuple(p) for p in cfg.get("transform", {}).get("replace", [])]
         # longest names first so layerfs_store_service wins over layerfs_store
+        # 名字长的先替换，这样 layerfs_store_service 优先于 layerfs_store
         by_len = sorted(self.crates, key=lambda c: -len(c["upstream"]))
         self.ident = [(re.compile(rf"\b{c['upstream'].replace('-', '_')}\b"), c["package"].replace("-", "_")) for c in by_len]
         self.dirs = [(re.compile(rf"(?<![\w-]){re.escape(c['upstream'])}/"), c["dir"] + "/") for c in by_len]
@@ -59,7 +69,7 @@ class Translator:
         text = self.rust(text)
         for rx, new in self.relpaths:  # path = "../layerfs-content"
             text = rx.sub(new, text)
-        for rx, new in self.pkgs:  # package names and dependency keys
+        for rx, new in self.pkgs:  # package names and dependency keys / 包名和依赖键
             text = rx.sub(new, text)
         text = text.replace("edition.workspace = true", f'edition = "{edition}"')
         text = text.replace("rust-version.workspace = true", f'rust-version = "{rust_version}"')

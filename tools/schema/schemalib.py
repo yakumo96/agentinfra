@@ -1,4 +1,7 @@
-"""Load, check and bundle the schemas/ tree. Standard library plus `jsonschema`/`referencing`."""
+"""Load, check and bundle the schemas/ tree. Standard library plus `jsonschema`/`referencing`.
+
+加载、检查并打包 schemas/ 目录。只用标准库加 `jsonschema`/`referencing`。
+"""
 from __future__ import annotations
 
 import copy
@@ -40,14 +43,20 @@ def load_tools() -> list[Tool]:
 
 
 def ref_name(ref: str) -> str:
-    """'../../common/defs.json#/$defs/X' or '#/$defs/X' -> 'X'."""
+    """'../../common/defs.json#/$defs/X' or '#/$defs/X' -> 'X'.
+
+    '../../common/defs.json#/$defs/X' 或 '#/$defs/X' -> 'X'。
+    """
     if "#/$defs/" not in ref:
         raise ValueError(f"unsupported $ref {ref!r}")
     return ref.split("#/$defs/", 1)[1]
 
 
 def inline_refs(schema, defs: dict, seen: tuple[str, ...] = ()):
-    """Return a copy of `schema` with every defs $ref replaced by the definition itself."""
+    """Return a copy of `schema` with every defs $ref replaced by the definition itself.
+
+    返回 `schema` 的副本，其中每个 defs 的 $ref 都替换为定义本身。
+    """
     if isinstance(schema, dict):
         if "$ref" in schema:
             name = ref_name(schema["$ref"])
@@ -55,7 +64,7 @@ def inline_refs(schema, defs: dict, seen: tuple[str, ...] = ()):
                 raise ValueError(f"recursive definition {name}")
             rest = {k: v for k, v in schema.items() if k != "$ref"}
             target = inline_refs(copy.deepcopy(defs[name]), defs, seen + (name,))
-            if rest:  # sibling keywords such as "default" next to $ref
+            if rest:  # sibling keywords such as "default" next to $ref / $ref 旁边的同级关键字，例如 "default"
                 return {"allOf": [target], **inline_refs(rest, defs, seen)}
             return target
         return {k: inline_refs(v, defs, seen) for k, v in schema.items()}
@@ -65,7 +74,10 @@ def inline_refs(schema, defs: dict, seen: tuple[str, ...] = ()):
 
 
 def bundle_tool(tool: Tool, defs: dict) -> dict:
-    """The MCP-facing form of one tool: self-contained input and output schemas."""
+    """The MCP-facing form of one tool: self-contained input and output schemas.
+
+    一个工具面向 MCP 的形式：自包含的输入和输出 schema。
+    """
     d = tool.doc
     out = {
         "name": d["name"],

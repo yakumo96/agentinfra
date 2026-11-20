@@ -1,4 +1,5 @@
 -- Work-item claim: priority order, dependencies, leases and the reaper.
+-- 工作项认领：优先级顺序、依赖、租约和回收器。
 SET search_path = infra, public;
 DO $$
 DECLARE
@@ -20,8 +21,10 @@ BEGIN
   ASSERT claim_work_item('t1', 'demo', wb) IS NULL, 'NO_WORK_AVAILABLE';
 
   -- leases renew on any call by the holder
+  -- 持有者的任何调用都会续期租约
   ASSERT renew_leases(wa) = 1;
   -- expiry: the claim goes back to open, the workspace link is kept
+  -- 过期：认领回到 open，保留工作区关联
   UPDATE work_items SET workspace_id = make_workspace(7, wb) WHERE id = uid('wi', 1);
   UPDATE leases SET expires_at = now() - interval '1 second' WHERE holder = wb;
   ASSERT reap_expired_leases() = 1;
@@ -32,6 +35,7 @@ BEGIN
   ASSERT renew_leases(wb) = 0, 'expired leases are not revived';
 
   -- once wi1 is done, wi3 becomes claimable
+  -- wi1 完成后，wi3 可以被认领
   UPDATE work_items SET state = 'done', claimed_by = wb WHERE id = uid('wi', 1);
   ASSERT (claim_work_item('t1', 'demo', wb)).id = uid('wi', 3);
 END $$;

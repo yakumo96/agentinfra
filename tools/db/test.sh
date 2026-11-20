@@ -3,6 +3,9 @@
 # (each in a fresh database) and tests/sql/*.sh (concurrency tests).
 #
 #   tools/db/test.sh            # needs initdb/postgres (PostgreSQL 16) on PATH or PG_BIN
+#
+# 在临时 PostgreSQL 集群上执行全部迁移，然后运行 tests/sql/*.sql（每个用新数据库）
+# 和 tests/sql/*.sh（并发测试）。需要 PATH 或 PG_BIN 里有 initdb/postgres（PostgreSQL 16）。
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"

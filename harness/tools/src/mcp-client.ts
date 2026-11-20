@@ -1,9 +1,12 @@
 // Minimal MCP Streamable HTTP client for Infra (tools only, stateless requests).
 // The token rides in the Authorization header; it never enters model context,
 // tool arguments or logs.
+// Infra 的最小 MCP Streamable HTTP 客户端（只用工具，请求无状态）。
+// 令牌放在 Authorization 头里，从不进入模型上下文、工具参数或日志。
 import type { ErrorCode, InfraToolName, InfraTools } from "./generated/infra-tools.ts";
 
-/** Must match the protocol revision infrad is pinned to. */
+/** Must match the protocol revision infrad is pinned to.
+ * 必须与 infrad 固定的协议修订一致。 */
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
 
 export class InfraToolError extends Error {
@@ -71,7 +74,8 @@ export class InfraClient {
     return tools;
   }
 
-  /** Call an Infra tool; tool errors are thrown as InfraToolError. */
+  /** Call an Infra tool; tool errors are thrown as InfraToolError.
+   * 调用 Infra 工具；工具错误以 InfraToolError 抛出。 */
   async call<K extends InfraToolName>(name: K, args: InfraTools[K]["input"]): Promise<InfraTools[K]["output"]> {
     const result = (await this.request("tools/call", { name, arguments: args })) as CallToolResult;
     if (result.isError) {
@@ -108,7 +112,8 @@ function textOf(r: CallToolResult): string {
   return (r.content ?? []).map((c) => c.text ?? "").join("\n");
 }
 
-/** Pick the JSON-RPC response with our id out of an SSE stream body. */
+/** Pick the JSON-RPC response with our id out of an SSE stream body.
+ * 从 SSE 流的正文中挑出与我们的 id 对应的 JSON-RPC 响应。 */
 export function fromSse(body: string, id: number): JsonRpcResponse {
   for (const event of body.split(/\r?\n\r?\n/)) {
     const data = event

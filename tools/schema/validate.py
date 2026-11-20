@@ -1,6 +1,8 @@
 """Check every schema under schemas/. Exit 1 on the first class of problems found.
 
     python3 tools/schema/validate.py
+
+检查 schemas/ 下的每个 schema。发现第一类问题即以 1 退出。
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ def check() -> list[str]:
     errors = sl.load_errors()
 
     # errors.json and the ErrorCode enum agree
+    # errors.json 与 ErrorCode 枚举一致
     codes = [e["code"] for e in errors]
     if len(set(codes)) != len(codes):
         problems.append("errors.json: duplicate codes")
@@ -39,6 +42,7 @@ def check() -> list[str]:
         problems.append("defs.ErrorCode.enum must equal the codes in errors.json, in order")
 
     # defs refer only to defs
+    # defs 只引用 defs
     for at, ref in iter_refs(defs):
         if not ref.startswith(sl.DEFS_REF) or sl.ref_name(ref) not in defs:
             problems.append(f"defs{at}: unresolved $ref {ref}")
@@ -78,10 +82,11 @@ def check() -> list[str]:
                     used.add(sl.ref_name(ref))
             try:
                 Draft202012Validator.check_schema(sl.inline_refs(doc[part], defs))
-            except Exception as exc:  # SchemaError or recursion
+            except Exception as exc:  # SchemaError or recursion / SchemaError 或递归
                 problems.append(f"{rel}: {part}: {exc}")
 
     # transitive use through defs; the error envelope and roles are used by every server and client
+    # 通过 defs 传递的引用；错误信封和角色被每个服务端和客户端使用
     used |= {"Error", "ErrorCode", "Role"}
     frontier = set(used)
     while frontier:
@@ -101,7 +106,10 @@ def check() -> list[str]:
 
 
 def check_examples(defs: dict) -> list[str]:
-    """schemas/examples/<tool>/{valid,invalid}/*.json against the bundled input schema."""
+    """schemas/examples/<tool>/{valid,invalid}/*.json against the bundled input schema.
+
+    用打包后的输入 schema 检查 schemas/examples/<tool>/{valid,invalid}/*.json。
+    """
     problems = []
     tools = {t.name: t for t in sl.load_tools()}
     root = sl.SCHEMAS / "examples"

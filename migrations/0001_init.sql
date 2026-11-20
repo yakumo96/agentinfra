@@ -8,6 +8,14 @@
 -- for infrad and is testable without it (tests/sql/). Infra errors are raised
 -- with SQLSTATE 'IA000' and the error code (schemas/common/errors.json) as the
 -- message; infrad maps them 1:1 onto tool errors.
+--
+-- 0001_init：单机版 Infra 的控制面。
+--
+-- 内容不可变，放在内容存储里；所有可变指针和控制状态都在这里。顺序永远是：
+-- 内容先在存储里提交并 fsync，然后指针在这里推进。
+--
+-- 原子机制写成 SQL 函数，这样每个机制对 infrad 来说是一条语句，且不依赖 infrad 就能测试（tests/sql/）。
+-- Infra 错误以 SQLSTATE 'IA000' 抛出，消息是错误码（schemas/common/errors.json）；infrad 把它们一一映射成工具错误。
 
 BEGIN;
 
@@ -22,7 +30,7 @@ CREATE TABLE schema_migrations (
 
 CREATE SEQUENCE fencing_seq;
 
--- ------------------------------------------------------------------ identity
+-- ------------------------------------------------------------------ identity / 身份
 CREATE TABLE actors (
   id           text PRIMARY KEY CHECK (id ~ '^act_[0-9A-HJKMNP-TV-Z]{26}$'),
   tenant_id    text NOT NULL,
@@ -44,7 +52,7 @@ CREATE TABLE tokens (
   id          bigserial PRIMARY KEY,
   tenant_id   text NOT NULL,
   actor_id    text NOT NULL REFERENCES actors (id),
-  token_hash  bytea NOT NULL UNIQUE,          -- sha256 of the 32-byte token; the token itself is never stored
+  token_hash  bytea NOT NULL UNIQUE,          -- sha256 of the 32-byte token; the token itself is never stored / 令牌 32 字节的 sha256；令牌本身从不存储
   role        text NOT NULL CHECK (role IN ('coordinator', 'worker', 'human', 'admin')),
   repo_id     text REFERENCES repositories (id),
   scopes      text[] NOT NULL DEFAULT '{}',
@@ -52,7 +60,7 @@ CREATE TABLE tokens (
   revoked_at  timestamptz
 );
 
--- ------------------------------------------------------------------ versions
+-- ------------------------------------------------------------------ versions / 版本
 CREATE TABLE revisions (
   id               text PRIMARY KEY CHECK (id ~ '^rev_[0-9A-HJKMNP-TV-Z]{26}$'),
   tenant_id        text NOT NULL,
@@ -84,11 +92,12 @@ CREATE TABLE branches (
   head_commit    text NOT NULL CHECK (head_commit ~ '^cm_[0-9a-f]{64}$'),
   owner_actor    text NOT NULL REFERENCES actors (id),
   created_at     timestamptz NOT NULL DEFAULT now(),
-  retained_until timestamptz            -- set when the last workspace is released and nothing published it
+  retained_until timestamptz            -- set when the last workspace is released and nothing published it / 最后一个工作区释放且没有被发布时设置
 );
 
 -- One per file-changing tool call. Content addressed: the id covers parent,
 -- root, changeset and metadata, so inserting the same id twice is a no-op.
+-- 每次改文件的工具调用一条。按内容寻址：id 覆盖父提交、根、changeset 和元数据，所以同一 id 插入两次是空操作。
 CREATE TABLE commits (
   id               text PRIMARY KEY CHECK (id ~ '^cm_[0-9a-f]{64}$'),
   tenant_id        text NOT NULL,
@@ -114,9 +123,9 @@ CREATE TABLE git_map (
   PRIMARY KEY (repo_id, git_sha)
 );
 
--- --------------------------------------------------------------- execution
+-- --------------------------------------------------------------- execution / 执行
 CREATE TABLE environments (
-  id           text PRIMARY KEY,            -- digest of root id, platform and capability list
+  id           text PRIMARY KEY,            -- digest of root id, platform and capability list / 根 id、平台和能力清单的摘要
   tenant_id    text NOT NULL,
   root_id      text NOT NULL CHECK (root_id ~ '^root_[0-9a-f]{64}$'),
   platform     text NOT NULL,
@@ -131,7 +140,7 @@ CREATE TABLE sandboxes (
   environment_id  text NOT NULL REFERENCES environments (id),
   lxc_name        text NOT NULL UNIQUE,
   sandboxd_unit   text NOT NULL,
-  ns_handles      jsonb NOT NULL DEFAULT '{}',  -- namespace file handles (name_to_handle_at), for reconciliation
+  ns_handles      jsonb NOT NULL DEFAULT '{}',  -- namespace file handles (name_to_handle_at), for reconciliation / 命名空间文件句柄（name_to_handle_at），用于对账
   workspace_count integer NOT NULL DEFAULT 0 CHECK (workspace_count BETWEEN 0 AND 16),
   state           text NOT NULL CHECK (state IN ('starting', 'running', 'idle', 'stopping', 'stopped', 'lost')),
   created_at      timestamptz NOT NULL DEFAULT now()
@@ -187,7 +196,7 @@ CREATE TABLE runs (
   id             text PRIMARY KEY CHECK (id ~ '^run_[0-9A-HJKMNP-TV-Z]{26}$'),
   tenant_id      text NOT NULL,
   kind           text NOT NULL CHECK (kind IN ('sync', 'background', 'validation')),
-  workspace_id   text REFERENCES workspaces (id),      -- NULL for validation runs
+  workspace_id   text REFERENCES workspaces (id),      -- NULL for validation runs / 验证 run 为 NULL
   actor_id       text NOT NULL REFERENCES actors (id),
   environment_id text REFERENCES environments (id),
   command        text NOT NULL,
@@ -226,11 +235,11 @@ CREATE TABLE run_receipts (
   output_commit   text,
   stdout_artifact text REFERENCES artifacts (id),
   stderr_artifact text REFERENCES artifacts (id),
-  evidence        jsonb NOT NULL DEFAULT '{}',   -- validation: {validate_toml_sha256, passed, summary}
+  evidence        jsonb NOT NULL DEFAULT '{}',   -- validation: {validate_toml_sha256, passed, summary} / 验证：{validate_toml_sha256, passed, summary}
   sealed_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- ------------------------------------------------------------ collaboration
+-- ------------------------------------------------------------ collaboration / 协作
 CREATE TABLE work_items (
   id           text PRIMARY KEY CHECK (id ~ '^wi_[0-9A-HJKMNP-TV-Z]{26}$'),
   tenant_id    text NOT NULL,
@@ -292,7 +301,7 @@ CREATE TABLE queue_entries (
 CREATE UNIQUE INDEX queue_one_live_entry ON queue_entries (proposal_id) WHERE state IN ('queued', 'in_batch');
 CREATE INDEX queue_order ON queue_entries (repo_id, target_ref, id) WHERE state = 'queued';
 
--- -------------------------------------------------------- idempotency, events
+-- -------------------------------------------------------- idempotency, events / 幂等、事件
 CREATE TABLE operations (
   tenant_id       text  NOT NULL,
   actor_id        text  NOT NULL,
@@ -337,13 +346,14 @@ END $$;
 CREATE TRIGGER audit_log_append_only BEFORE UPDATE OR DELETE ON audit_log
   FOR EACH ROW EXECUTE FUNCTION refuse_change();
 
--- ================================================================ functions
+-- ================================================================ functions / 函数
 CREATE FUNCTION fail(code text, detail text DEFAULT NULL) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION USING ERRCODE = 'IA000', MESSAGE = code, DETAIL = coalesce(detail, '');
 END $$;
 
 -- Events are written in the same transaction as the state change they describe.
+-- 事件与它描述的状态变化在同一事务里写入。
 CREATE FUNCTION emit(p_tenant text, p_aggregate_kind text, p_aggregate_id text, p_kind text, p_payload jsonb DEFAULT '{}')
 RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE v_id bigint;
@@ -356,6 +366,7 @@ BEGIN
 END $$;
 
 -- Mechanism one: conditional ref update. NULL means the ref moved (PUBLICATION_CONFLICT).
+-- 机制一：ref 条件更新。NULL 表示 ref 已被移动（PUBLICATION_CONFLICT）。
 CREATE FUNCTION advance_ref(p_repo text, p_ref text, p_expected text, p_new text, p_actor text)
 RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE v_version bigint; v_tenant text;
@@ -373,6 +384,9 @@ END $$;
 -- Mechanism two: write authority with fencing tokens.
 --   agent: takes a free workspace, or re-acquires its own (token unchanged);
 --   system: always takes over and rotates the token (restore, rebase, reaper).
+-- 机制二：带 fencing token 的写入权。
+--   agent：取得空闲的工作区，或重新取得自己的（token 不变）；
+--   system：总是接管并换发 token（restore、rebase、回收器）。
 CREATE FUNCTION acquire_writer(p_ws text, p_kind text, p_actor text, p_lease interval DEFAULT '60 seconds')
 RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE w infra.workspaces; v_token bigint;
@@ -401,6 +415,7 @@ BEGIN
 END $$;
 
 -- Give up write authority. The token rotates so a stale holder cannot write.
+-- 放弃写入权。token 会换发，旧持有者无法再写。
 CREATE FUNCTION release_writer(p_ws text, p_token bigint) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE infra.workspaces SET writer_kind = 'none', writer_id = NULL, fencing_token = nextval('infra.fencing_seq')
@@ -412,6 +427,7 @@ END $$;
 
 -- Record a commit and advance the branch head at a tool-call boundary.
 -- The commit's content is already durable in the store. Returns the new generation.
+-- 在工具调用边界记录一个 commit 并推进分支头。commit 的内容已经持久化在存储里。返回新的 generation。
 CREATE FUNCTION record_commit(
   p_ws text, p_token bigint, p_expected_head text,
   p_commit text, p_root text, p_changeset_digest text, p_changed_paths text[],
@@ -440,6 +456,7 @@ BEGIN
 END $$;
 
 -- Mechanism three: leases. Any call by a holder renews what it holds.
+-- 机制三：租约。持有者的任何调用都会续期它持有的租约。
 CREATE FUNCTION renew_leases(p_holder text, p_lease interval DEFAULT '60 seconds') RETURNS integer
 LANGUAGE sql AS $$
   WITH r AS (
@@ -451,6 +468,7 @@ $$;
 
 -- The reaper: expire leases, take back write authority (new token), return
 -- claimed work items to `open` while keeping their workspace for the next claimer.
+-- 回收器：使租约过期，收回写入权（换发 token），把已认领的工作项退回 `open`，同时保留其工作区给下一个认领者。
 CREATE FUNCTION reap_expired_leases() RETURNS integer LANGUAGE plpgsql AS $$
 DECLARE l infra.leases; n integer := 0;
 BEGIN
@@ -478,6 +496,7 @@ END $$;
 
 -- Atomic claim; items with unfinished dependencies are skipped; concurrent
 -- claimers do not block each other. NULL means NO_WORK_AVAILABLE.
+-- 原子认领；跳过依赖未完成的工作项；并发认领者互不阻塞。NULL 表示 NO_WORK_AVAILABLE。
 CREATE FUNCTION claim_work_item(p_tenant text, p_repo text, p_actor text, p_lease interval DEFAULT '60 seconds')
 RETURNS infra.work_items LANGUAGE plpgsql AS $$
 DECLARE v_id text; v_lease bigint; v_item infra.work_items;
@@ -505,6 +524,11 @@ END $$;
 --   replay      same request, finished: return `result`
 --   in_progress same request, still running: OPERATION_IN_PROGRESS with operation_id
 --   conflict    same key, different request: IDEMPOTENCY_CONFLICT
+-- 机制四：幂等。结果是以下之一：
+--   new         第一次：执行操作，然后 op_finish
+--   replay      同一请求，已完成：返回 `result`
+--   in_progress 同一请求，仍在执行：返回 OPERATION_IN_PROGRESS 和 operation_id
+--   conflict    同一键，不同请求：IDEMPOTENCY_CONFLICT
 CREATE FUNCTION op_begin(p_tenant text, p_actor text, p_kind text, p_key text, p_digest bytea, p_new_op text,
                          p_ttl interval DEFAULT '24 hours',
                          OUT outcome text, OUT operation_id text, OUT state text, OUT result jsonb)
@@ -541,6 +565,8 @@ END $$;
 -- Submit: supersede the work item's live proposal, enqueue (unless blocked for
 -- approval), move the work item to in_review. Protected-path policy is decided
 -- by infrad from the changeset and passed in as p_needs_approval.
+-- 提交：作废该工作项仍有效的 Proposal，入队（除非因需审批而阻塞），把工作项移到 in_review。
+-- 受保护路径策略由 infrad 根据 changeset 判定，以 p_needs_approval 传入。
 CREATE FUNCTION submit_proposal(p_id text, p_ws text, p_work_item text, p_candidate text, p_target_ref text,
                                 p_message text, p_actor text, p_needs_approval boolean)
 RETURNS infra.proposals LANGUAGE plpgsql AS $$
@@ -591,6 +617,7 @@ END $$;
 
 -- Merge queue results. Published proposals mark their work items done;
 -- blocked ones send the work item back to `claimed` for the same worker.
+-- 合并队列结果。已发布的 Proposal 把工作项标为 done；被阻塞的把工作项退回给同一 worker，状态为 `claimed`。
 CREATE FUNCTION publish_proposals(p_ids text[], p_revision text, p_evidence jsonb) RETURNS integer
 LANGUAGE plpgsql AS $$
 DECLARE p infra.proposals; n integer := 0;

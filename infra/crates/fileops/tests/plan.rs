@@ -254,6 +254,7 @@ fn symlinks_resolve_inside_and_refuse_outside() {
         ErrorCode::PathEscape
     );
     // deleting the link itself is fine: the final component is not followed
+    // 删除链接本身没问题：不跟随最后一级
     assert_eq!(
         plan_of(
             &view,
@@ -347,6 +348,7 @@ fn delete_and_move_rules() {
     );
     assert_eq!(mv.changed_paths, vec![p("a"), p("x/y/a")]);
     // the moved-away path no longer exists for later ops
+    // 移走的路径对后续操作不再存在
     assert_eq!(
         code(plan(
             &view,
@@ -423,6 +425,7 @@ fn edit(path: &str, edits: &[(&str, &str)]) -> Op {
 fn pi_edit_matches_against_the_original_text() {
     let view = Mem::default().file("m.rs", "fn a() {}\nfn main() { a(); }\n");
     // the second edit's old text would not exist after the first one if applied incrementally
+    // 如果逐个应用，第二处 edit 的旧文本在第一处之后就不存在了
     let plan = plan_of(
         &view,
         edit("m.rs", &[("fn a()", "fn b()"), ("{ a(); }", "{ b(); }")]),
@@ -437,6 +440,7 @@ fn pi_edit_matches_against_the_original_text() {
         }]
     );
     // newText that contains another edit's oldText is fine: matching uses the original
+    // newText 里包含另一处 edit 的 oldText 也没关系：匹配用的是原文
     assert!(
         plan_of(
             &view,

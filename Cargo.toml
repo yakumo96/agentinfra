@@ -11,6 +11,9 @@ members = [
 #   [patch.crates-io] fuser = { version = "=0.18.0", path = "infra/vendor/fuser-0.18.0" }
 # Until then they stay out so the std-only crates above build and test offline.
 # `cargo metadata --no-deps` over all of them passes (checked by `just check-absorbed`).
+# 吸收自 LayerFS v1.1.0（见 infra/UPSTREAM.layerfs.toml）。等构建环境能访问 crates.io，
+# 这些 crate 连同上面的 [patch.crates-io] fuser 一起加入 `members`；在那之前留在外面，
+# 让上面只依赖标准库的 crate 能离线构建和测试。全部清单由 `just check-absorbed` 用 `cargo metadata --no-deps` 检查。
 exclude = [
     "infra/crates/telemetry",
     "infra/crates/content",

@@ -1,4 +1,5 @@
 -- Mechanism two: write authority, fencing tokens and per-call commits.
+-- 机制二：写入权、fencing token 和每次调用的提交。
 SET search_path = infra, public;
 DO $$
 DECLARE
@@ -20,6 +21,7 @@ BEGIN
     ws, t1, cm(0), cm(2), rt(2), 'cs2', '{b}', wa, 'call_2', 'filesystem-consistent'), 'REVISION_MISMATCH');
 
   -- restore/rebase: system takes over and rotates the token; the old writer is fenced out
+  -- restore/rebase：system 接管并换发 token；旧写入者被挡在外面
   t2 := acquire_writer(ws, 'system', sys);
   ASSERT t2 > t1;
   PERFORM expect_error(format(

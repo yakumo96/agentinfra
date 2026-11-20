@@ -4,13 +4,16 @@ use crate::ErrorCode;
 
 /// A tool-level error. Rendered by the MCP layer as `isError: true` with
 /// `structuredContent = {code, message, retryable, details}`.
+/// 工具级错误。MCP 层把它渲染为 `isError: true`，`structuredContent = {code, message, retryable, details}`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InfraError {
     pub code: ErrorCode,
     pub message: String,
     /// Paths the error is about (`details.paths`), e.g. the op that failed validation.
+    /// 错误涉及的路径（`details.paths`），例如校验失败的那个操作。
     pub paths: Vec<String>,
     /// For `OPERATION_IN_PROGRESS`: the operation the caller should wait for.
+    /// 用于 `OPERATION_IN_PROGRESS`：调用方应等待的操作。
     pub operation_id: Option<String>,
 }
 

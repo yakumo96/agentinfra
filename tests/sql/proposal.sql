@@ -1,4 +1,5 @@
 -- Submit, supersede, block, publish; ref conditional update.
+-- 提交、作废、阻塞、发布；ref 条件更新。
 SET search_path = infra, public;
 DO $$
 DECLARE
@@ -15,6 +16,7 @@ BEGIN
   PERFORM record_commit(ws, tok, cm(0), cm(1), rt(1), 'cs1', '{src/a.rs}', wa, 'c1', NULL, 'filesystem-consistent');
 
   -- only the claimer may submit, and only the branch head
+  -- 只有认领者能提交，且只能提交分支头
   PERFORM expect_error(format('SELECT infra.submit_proposal(%L, %L, %L, %L, %L, %L, %L, false)',
     uid('pr', 9), ws, uid('wi', 1), cm(1), 'main', 'm', wb), 'AUTHORIZATION_DENIED');
   PERFORM expect_error(format('SELECT infra.submit_proposal(%L, %L, %L, %L, %L, %L, %L, false)',
@@ -26,11 +28,13 @@ BEGIN
   ASSERT (SELECT count(*) FROM queue_entries WHERE state = 'queued') = 1;
 
   -- the queue blocks it on a conflict: work item goes back to its worker
+  -- 队列因冲突阻塞它：工作项回到原 worker
   PERFORM block_proposal(uid('pr', 1), 'merge_conflict', '{src/a.rs}');
   ASSERT (SELECT state FROM work_items WHERE id = uid('wi', 1)) = 'claimed';
   ASSERT (SELECT conflicts FROM proposals WHERE id = uid('pr', 1)) = '{src/a.rs}';
 
   -- unresolved conflict markers stop a resubmit
+  -- 未解决的冲突标记会阻止重新提交
   UPDATE workspaces SET unresolved_conflicts = '{src/a.rs}' WHERE id = ws;
   PERFORM expect_error(format('SELECT infra.submit_proposal(%L, %L, %L, %L, %L, %L, %L, false)',
     uid('pr', 2), ws, uid('wi', 1), cm(1), 'main', 'retry', wa), 'CONFLICT_MARKERS_PRESENT');
@@ -38,10 +42,12 @@ BEGIN
   PERFORM record_commit(ws, tok, cm(1), cm(2), rt(2), 'cs2', '{src/a.rs}', wa, 'c2', NULL, 'quiesced');
 
   -- resubmit supersedes the blocked proposal
+  -- 重新提交会作废被阻塞的 Proposal
   p := submit_proposal(uid('pr', 2), ws, uid('wi', 1), cm(2), 'main', 'retry', wa, false);
   ASSERT (SELECT state || ':' || superseded_by FROM proposals WHERE id = uid('pr', 1)) = 'SUPERSEDED:' || uid('pr', 2);
 
   -- publish: ref moves only from the expected revision
+  -- 发布：ref 只从预期的 revision 移动
   INSERT INTO revisions (id, tenant_id, repo_id, root_id, parents, changeset_digest, published_by)
   VALUES (uid('rev', 2), 't1', 'demo', rt(2), ARRAY['rev_00000000000000000000000001'], 'cs', sys);
   ASSERT advance_ref('demo', 'main', uid('rev', 9), uid('rev', 2), sys) IS NULL, 'PUBLICATION_CONFLICT';

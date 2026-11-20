@@ -2,6 +2,10 @@
 //!
 //! ULID-based IDs (`ws_<ulid>`) are minted here; digest-based IDs (`cm_<blake3>`)
 //! are computed by the version engine and only validated here.
+//!
+//! 来自 `schemas/common/defs.json` 的带类型 ID 前缀。
+//!
+//! 基于 ULID 的 ID（`ws_<ulid>`）在这里生成；基于摘要的 ID（`cm_<blake3>`）由版本引擎计算，这里只做校验。
 
 use std::fs::File;
 use std::io::Read;
@@ -56,6 +60,7 @@ impl DigestKind {
 }
 
 /// Mint a new `<prefix>_<ulid>` ID.
+/// 生成一个新的 `<prefix>_<ulid>` ID。
 pub fn mint(kind: UlidKind) -> std::io::Result<String> {
     let ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -66,6 +71,7 @@ pub fn mint(kind: UlidKind) -> std::io::Result<String> {
 }
 
 /// Crockford base32 of 48-bit milliseconds followed by 80 random bits (26 chars).
+/// 48 位毫秒时间加 80 位随机数的 Crockford base32 编码（26 个字符）。
 pub fn encode_ulid(ms: u64, rnd: [u8; 10]) -> String {
     let mut value: u128 = u128::from(ms & 0xFFFF_FFFF_FFFF) << 80;
     for (i, b) in rnd.iter().enumerate() {

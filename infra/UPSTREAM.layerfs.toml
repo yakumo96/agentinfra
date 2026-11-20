@@ -6,6 +6,12 @@
 # through our own merge queue as a normal proposal with a link to the upstream
 # commit. Changes we decline are recorded under [[rejected]] so they are not
 # re-evaluated next time.
+#
+# 我们从 LayerFS 拿了什么、现在放在哪、改了什么、决定不拿什么。由 tools/upstream/absorb.py 读取。
+#
+# 吸收来的代码归我们所有，可以随意修改。上游变更按版本评审（`just upstream-diff layerfs <镜像提交>`），
+# 每条要移植的变更作为普通 Proposal 走我们自己的合并队列，并附上游提交链接。
+# 拒绝的变更记在 [[rejected]] 下，下次不再重复评估。
 
 [upstream]
 name = "layerfs"
@@ -16,22 +22,27 @@ mirror_branch = "upstream/layerfs"
 base_tag = "v1.1.0"
 base_commit = "9f97a7ec95b662e9cb288704afa165feff132cfa"
 # Our mirror commit holding that snapshot; absorption reads from here.
+# 保存该快照的我们自己的镜像提交；吸收从这里读取。
 mirror_commit = "d14a93e49fa4f6921e3363b9c97f1157e8b30ec9"
 absorbed_on = "2026-11-02"
 
 [transform]
 # Upstream crates are edition 2021; they keep it after absorption.
+# 上游 crate 是 edition 2021，吸收后保持不变。
 edition = "2021"
 rust_version = "1.85"
 # Applied to every text file of an absorbed crate, in addition to crate renames.
+# 除 crate 改名外，对吸收 crate 的每个文本文件都应用。
 replace = [
   ["CARGO_BIN_EXE_layerfs-daemon", "CARGO_BIN_EXE_infra-sandboxd"],
 ]
 # Runtime string literals with a `layerfs` prefix (thread names, temp-file
 # prefixes, LAYERFS_* settings) are left as they are and renamed when touched.
+# 带 `layerfs` 前缀的运行时字符串（线程名、临时文件前缀、LAYERFS_* 设置）保持原样，改到时再改名。
 
 # role: product = part of Infra; test-support = only kept so upstream tests keep
 # running until they are ported to our own fixtures.
+# role：product = Infra 的一部分；test-support = 只为让上游测试继续运行而保留，测试移植到我们自己的 fixture 后删除。
 [[crate]]
 upstream = "layerfs-telemetry"
 dir = "telemetry"
@@ -146,11 +157,12 @@ upstream = "LICENSE"
 dest = "third_party/licenses/layerfs.txt"
 
 # Needed in the root Cargo.toml when the absorbed crates join the workspace.
+# 吸收的 crate 加入 workspace 时，根 Cargo.toml 需要的设置。
 [workspace_requirements]
 patch_crates_io = 'fuser = { version = "=0.18.0", path = "infra/vendor/fuser-0.18.0" }'
 profile_test = "opt-level = 1; zstd-sys at opt-level 3"
 
-# ------------------------------------------------------------------ our changes
+# ------------------------------------------------------------------ our changes / 我们的改造
 [[change]]
 id = "durable-profile"
 crates = ["store-sqlite"]
@@ -192,7 +204,7 @@ crates = ["*"]
 status = "done"
 what = "Crates moved under infra/crates and renamed layerfs-* -> infra-*; edition 2021 pinned per crate."
 
-# ------------------------------------------------------- upstream rules we do not adopt
+# ------------------------------------------------------- upstream rules we do not adopt / 不采纳的上游规则
 [[rejected]]
 upstream_rule = "Disposable / WAL / synchronous=OFF is the only permitted profile (AGENTS.md, owner 2026-10-07)"
 reason = "Conflicts with Local-durable commits; see change durable-profile."

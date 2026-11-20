@@ -1,4 +1,7 @@
-"""The CHECK (... IN (...)) lists in migrations must equal the enums in schemas/common/defs.json."""
+"""The CHECK (... IN (...)) lists in migrations must equal the enums in schemas/common/defs.json.
+
+migrations 里的 CHECK (... IN (...)) 列表必须等于 schemas/common/defs.json 里的枚举。
+"""
 from __future__ import annotations
 
 import re
@@ -9,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "schema"))
 import schemalib as sl  # noqa: E402
 
 # (table, column) -> defs enum name
+# (表, 列) -> defs 枚举名
 BINDINGS = {
     ("runs", "state"): "RunState",
     ("work_items", "state"): "WorkItemState",

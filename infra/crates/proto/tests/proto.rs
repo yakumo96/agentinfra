@@ -62,6 +62,7 @@ fn ulid_ids() {
         "7ZZZZZZZZZZZZZZZZZZZZZZZZZ"
     );
     // ordering follows time
+    // 顺序跟随时间
     let early = ids::encode_ulid(1, [0xFF; 10]);
     let late = ids::encode_ulid(2, [0; 10]);
     assert!(early < late);

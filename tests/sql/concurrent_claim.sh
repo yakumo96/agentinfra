@@ -1,4 +1,5 @@
 # 12 claimers race for 60 items: every item is claimed exactly once.
+# 12 个认领者争抢 60 个工作项：每项恰好被认领一次。
 set -euo pipefail
 PSQL=(psql -X -q -t -A -v ON_ERROR_STOP=1 --no-psqlrc)
 "${PSQL[@]}" -c "INSERT INTO infra.work_items (id, tenant_id, repo_id, title, spec, acceptance, priority, created_by)

@@ -1,4 +1,5 @@
 [toolchain]
 # Tested with 1.97.0. Minimum supported version is rust-version in Cargo.toml.
+# 已用 1.97.0 测试。最低支持版本见 Cargo.toml 的 rust-version。
 channel = "stable"
 components = ["rustfmt", "clippy"]
